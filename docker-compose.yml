@@ -70,6 +70,7 @@ services:
 
 volumes:
   mongodb_data:
+  postgres_data:
 
 networks:
   ecommerce-network:
