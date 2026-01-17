@@ -12,6 +12,20 @@ services:
     networks:
       - ecommerce-network
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: ecommerce-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: orderdb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce-network
+
   redis:
     image: redis:7-alpine
     container_name: ecommerce-redis
