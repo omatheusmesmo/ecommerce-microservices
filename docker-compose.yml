@@ -67,28 +67,20 @@ services:
     entrypoint: [ "/bin/sh", "-c" ]
     command: |
       "
-      echo '⏳ Waiting for Kafka to be ready.. .'
+      echo '⏳ Waiting for Kafka to be ready...'
       sleep 10
-
       echo '📋 Creating Kafka topics...'
-
       kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic order-created --partitions 3 --replication-factor 1
-
       kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic order-status-changed --partitions 3 --replication-factor 1
-
-      kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic product-events --partitions 3 --replication-factor 1
-
-      kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic stock-events --partitions 3 --replication-factor 1
-
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic product-created --partitions 3 --replication-factor 1
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic product-updated --partitions 3 --replication-factor 1
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic product-deleted --partitions 3 --replication-factor 1
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic stock-changed --partitions 3 --replication-factor 1
       kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic notification-events --partitions 2 --replication-factor 1
-
       echo '✅ Kafka topics created successfully!'
       echo ''
       echo '📋 Listing all topics:'
       kafka-topics --list --bootstrap-server kafka:9092
-      echo ''
-      echo '📊 Topic details:'
-      kafka-topics --describe --bootstrap-server kafka:9092
       echo ''
       echo '✅ Kafka initialization complete!'
       "
