@@ -1,4 +1,123 @@
 services:
+  # ========================================
+  # ZOOKEEPER (required for Kafka)
+  # ========================================
+  zookeeper:
+    image:  confluentinc/cp-zookeeper:7.5.0
+    container_name: ecommerce-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ========================================
+  # KAFKA
+  # ========================================
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: ecommerce-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # Internal listener (containers) + External listener (host)
+      KAFKA_LISTENERS:  PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR:  1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # Disable auto topic creation (explicit control)
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+
+  # ========================================
+  # KAFKA INIT (Creates topics automatically)
+  # ========================================
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: ecommerce-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+    entrypoint: [ "/bin/sh", "-c" ]
+    command: |
+      "
+      echo '⏳ Waiting for Kafka to be ready.. .'
+      sleep 10
+
+      echo '📋 Creating Kafka topics...'
+
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic order-created --partitions 3 --replication-factor 1
+
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic order-status-changed --partitions 3 --replication-factor 1
+
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic product-events --partitions 3 --replication-factor 1
+
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic stock-events --partitions 3 --replication-factor 1
+
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic notification-events --partitions 2 --replication-factor 1
+
+      echo '✅ Kafka topics created successfully!'
+      echo ''
+      echo '📋 Listing all topics:'
+      kafka-topics --list --bootstrap-server kafka:9092
+      echo ''
+      echo '📊 Topic details:'
+      kafka-topics --describe --bootstrap-server kafka:9092
+      echo ''
+      echo '✅ Kafka initialization complete!'
+      "
+
+  # ========================================
+  # POSTGRESQL (Order Service)
+  # ========================================
+  postgres:
+    image:  postgres:16-alpine
+    container_name:  ecommerce-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: orderdb
+      POSTGRES_USER:  admin
+      POSTGRES_PASSWORD:  admin123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d orderdb"]
+      interval:  10s
+      timeout: 5s
+      retries: 5
+
+  # ========================================
+  # MONGODB (Product Service)
+  # ========================================
   mongodb:
     image: mongo:7.0
     container_name: ecommerce-mongodb
@@ -7,57 +126,40 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: productdb
     volumes:
       - mongodb_data:/data/db
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db. adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  postgres:
-    image: postgres:16-alpine
-    container_name: ecommerce-postgres
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: orderdb
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin123
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - ecommerce-network
-
+  # ========================================
+  # REDIS (Cache)
+  # ========================================
   redis:
     image: redis:7-alpine
     container_name: ecommerce-redis
     ports:
       - "6379:6379"
+    # Enable AOF persistence
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    container_name: ecommerce-zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    networks:
-      - ecommerce-network
-
-  kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    container_name: ecommerce-kafka
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    networks:
-      - ecommerce-network
-
+  # ========================================
+  # PROMETHEUS (Metrics)
+  # ========================================
   prometheus:
     image: prom/prometheus:v2.47.0
     container_name: ecommerce-prometheus
@@ -65,14 +167,63 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
     networks:
       - ecommerce-network
+    healthcheck:
+      test:  ["CMD", "wget", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # ========================================
+  # GRAFANA (Dashboards - Optional)
+  # ========================================
+  grafana:
+    image:  grafana/grafana:10.2.0
+    container_name: ecommerce-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - ecommerce-network
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval:  10s
+      timeout: 5s
+      retries: 5
+
+# ========================================
+# VOLUMES
+# ========================================
 volumes:
-  mongodb_data:
   postgres_data:
+    driver: local
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver:  local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
 
+# ========================================
+# NETWORKS
+# ========================================
 networks:
   ecommerce-network:
     driver: bridge
-
