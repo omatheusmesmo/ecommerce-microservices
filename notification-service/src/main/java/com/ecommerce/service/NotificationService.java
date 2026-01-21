@@ -6,6 +6,7 @@ import com.ecommerce.enums.NotificationType;
 import com.ecommerce.enums.OrderStatus;
 import com.ecommerce.enums.StockChangeReason;
 import com.ecommerce.provider.NotificationProvider;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -28,20 +29,21 @@ public class NotificationService {
 
     private final Map<NotificationChannel, NotificationProvider> providerMap = new HashMap<>();
 
+    @PostConstruct
     public void init(){
-        if (!providerMap.isEmpty()){
-            return;
-        }
+        LOG.info("Initializing notification service...");
+
         providers.forEach(provider ->{
             providerMap.put(provider.getChannel(), provider);
             LOG.infof("Registered notification provider: %s (enabled=%s)", provider.getChannel(),provider.isEnabled());
         });
+
+        if (!providerMap.isEmpty()){
+            LOG.warn("No notification providers registered!");
+        }
     }
 
     public void send(@Valid @NotNull NotificationRequest request){
-        if (providerMap.isEmpty()){
-            init();
-        }
 
         NotificationProvider provider = providerMap.get(request.channel());
 
@@ -58,9 +60,6 @@ public class NotificationService {
 
     public void broadcast(@Valid @NotNull NotificationRequest request,
                           @NotNull List<NotificationChannel> channels){
-        if (providerMap.isEmpty()){
-            init();
-        }
         channels.forEach(channel -> {
             NotificationRequest channelRequest = new NotificationRequest(
                     request.type(),
