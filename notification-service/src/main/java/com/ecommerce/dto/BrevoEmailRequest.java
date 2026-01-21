@@ -17,9 +17,8 @@ public record BrevoEmailRequest(
         Sender sender,
 
         @NotEmpty(message = "At least one recipient is required")
-        @Valid
         @JsonProperty("to")
-        List<Recipient> to,
+        List<@Valid Recipient> to,
 
         @NotBlank(message = "Subject is required")
         @JsonProperty("subject")
