@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 @ApplicationScoped
 public class DiscordWebhookClient {
@@ -20,7 +21,7 @@ public class DiscordWebhookClient {
     private final static Logger LOG = Logger.getLogger(DiscordWebhookClient.class);
 
     @ConfigProperty(name = "discord.webhook.url")
-    String webhookUrl;
+    Optional<String> webhookUrl;
     @ConfigProperty(name = "discord.webhook.enabled", defaultValue = "true")
     boolean enabled;
 
@@ -34,7 +35,7 @@ public class DiscordWebhookClient {
         try{
             Map<String, Object> payload = Map.of("content",content);
 
-            Response response = client.target(webhookUrl)
+            Response response = client.target(webhookUrl.get())
                     .request(MediaType.APPLICATION_JSON)
                     .post(Entity.json(payload));
 
@@ -47,7 +48,6 @@ public class DiscordWebhookClient {
             response.close();
         }catch (Exception e){
             LOG.errorf(e, "Failed to send Discord message");
-            throw new RuntimeException("Discord webhook failed", e);
         }
     }
 
@@ -71,7 +71,7 @@ public class DiscordWebhookClient {
 
             Map<String, Object> payload = Map.of("embeds", List.of(embed));
 
-            Response response = client.target(webhookUrl)
+            Response response = client.target(webhookUrl.get())
                     .request(MediaType.APPLICATION_JSON)
                     .post(Entity.json(payload));
 
@@ -85,7 +85,6 @@ public class DiscordWebhookClient {
             response.close();
         } catch (Exception e) {
             LOG.errorf("Failed to send Discord rich message");
-            throw new RuntimeException("Discord webhook failed", e);
         }
     }
 
@@ -104,10 +103,7 @@ public class DiscordWebhookClient {
     }
 
     public boolean isConfigured() {
-        return webhookUrl != null &&
-                ! webhookUrl.isBlank() &&
-                ! webhookUrl.equals("YOUR_WEBHOOK_URL_HERE") &&
-                webhookUrl.startsWith("https://discord.com/api/webhooks/");
+        return !webhookUrl.get().isBlank();
     }
 
     private int parseColor(String color) {
