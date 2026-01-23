@@ -1,0 +1,33 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'ecommerce-local'
+    environment: 'docker-compose'
+
+scrape_configs:
+  # Order Service
+  - job_name: 'order-service'
+    static_configs:
+      - targets:  ['order-service:8080']
+    metrics_path: '/q/metrics'
+    scrape_interval: 10s
+
+  # Product Service
+  - job_name: 'product-service'
+    static_configs:
+      - targets: ['product-service:8080']
+    metrics_path: '/q/metrics'
+    scrape_interval: 10s
+
+  # Notification Service
+  - job_name: 'notification-service'
+    static_configs:
+      - targets: ['notification-service:8080']
+    metrics_path: '/q/metrics'
+    scrape_interval: 10s
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets:  ['localhost:9090']
