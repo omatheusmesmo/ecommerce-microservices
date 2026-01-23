@@ -3,19 +3,20 @@ package com.ecommerce.resource;
 import com.ecommerce.entity.Product;
 import com.ecommerce.service.ProductService;
 import jakarta.inject.Inject;
-import jakarta. ws.rs.*;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs. core.Response;
-import org. jboss.logging.Logger;
+import jakarta.ws.rs.core.Response;
+import org.jboss.logging.Logger;
 
-import java. util.List;
+import java.util.List;
 
 @Path("/products")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ProductResource {
 
-    private static final Logger LOG = Logger.getLogger(ProductResource. class);
+    private static final Logger LOG = Logger.getLogger(ProductResource.class);
 
     @Inject
     ProductService productService;
@@ -35,14 +36,14 @@ public class ProductResource {
             LOG.warnf("Product %s not found", id);
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response. ok(product).build();
+        return Response.ok(product).build();
     }
 
     @GET
     @Path("/category/{category}")
     public List<Product> findByCategory(@PathParam("category") String category) {
         LOG.debugf("GET /products/category/%s", category);
-        return productService. findByCategory(category);
+        return productService.findByCategory(category);
     }
 
     @GET
@@ -53,7 +54,7 @@ public class ProductResource {
     }
 
     @POST
-    public Response create(Product product) {
+    public Response create(@Valid Product product) {
         LOG.infof("POST /products - Creating product: %s", product.name);
         Product created = productService.create(product);
         return Response.status(Response.Status.CREATED).entity(created).build();
@@ -61,11 +62,11 @@ public class ProductResource {
 
     @PUT
     @Path("/{id}")
-    public Response update(@PathParam("id") String id, Product product) {
+    public Response update(@PathParam("id") String id, @Valid Product product) {
         LOG.infof("PUT /products/%s - Updating product", id);
         Product updated = productService.update(id, product);
         if (updated == null) {
-            return Response.status(Response.Status. NOT_FOUND).build();
+            return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.ok(updated).build();
     }
@@ -75,8 +76,8 @@ public class ProductResource {
     public Response delete(@PathParam("id") String id) {
         LOG.infof("DELETE /products/%s", id);
         boolean deleted = productService.delete(id);
-        if (! deleted) {
-            return Response. status(Response.Status.NOT_FOUND).build();
+        if (!deleted) {
+            return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.noContent().build();
     }
