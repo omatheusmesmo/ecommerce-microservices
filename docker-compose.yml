@@ -3,21 +3,25 @@ services:
   # ZOOKEEPER (required for Kafka)
   # ========================================
   zookeeper:
-    image:  confluentinc/cp-zookeeper:7.5.0
+    image: confluentinc/cp-zookeeper:7.5.0
     container_name: ecommerce-zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      test: [ "CMD", "nc", "-z", "localhost", "2181" ]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
+    restart: unless-stopped
 
   # ========================================
   # KAFKA
@@ -34,24 +38,25 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # Internal listener (containers) + External listener (host)
-      KAFKA_LISTENERS:  PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS:  PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR:  1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      # Disable auto topic creation (explicit control)
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR:  1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+    volumes:
+      - kafka_data:/var/lib/kafka/data
     networks:
       - ecommerce-network
     healthcheck:
       test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
-      interval: 10s
+      interval:  10s
       timeout: 10s
       retries: 10
       start_period: 40s
+    restart: unless-stopped
 
   # ========================================
   # KAFKA INIT (Creates topics automatically)
@@ -64,7 +69,7 @@ services:
         condition: service_healthy
     networks:
       - ecommerce-network
-    entrypoint: [ "/bin/sh", "-c" ]
+    entrypoint: ["/bin/sh", "-c"]
     command: |
       "
       echo '⏳ Waiting for Kafka to be ready...'
@@ -78,34 +83,32 @@ services:
       kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic stock-changed --partitions 3 --replication-factor 1
       kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic notification-events --partitions 2 --replication-factor 1
       echo '✅ Kafka topics created successfully!'
-      echo ''
-      echo '📋 Listing all topics:'
       kafka-topics --list --bootstrap-server kafka:9092
-      echo ''
-      echo '✅ Kafka initialization complete!'
       "
 
   # ========================================
   # POSTGRESQL (Order Service)
   # ========================================
   postgres:
-    image:  postgres:16-alpine
+    image: postgres:16-alpine
     container_name:  ecommerce-postgres
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: orderdb
-      POSTGRES_USER:  admin
-      POSTGRES_PASSWORD:  admin123
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d orderdb"]
-      interval:  10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout:  5s
+      retries:  10
+      start_period: 60s
+    restart: unless-stopped
 
   # ========================================
   # MONGODB (Product Service)
@@ -116,20 +119,21 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin123
-      MONGO_INITDB_DATABASE: productdb
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
     volumes:
       - mongodb_data:/data/db
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db. adminCommand('ping')"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
-  # ========================================
+    # ========================================
   # REDIS (Cache)
   # ========================================
   redis:
@@ -137,8 +141,7 @@ services:
     container_name: ecommerce-redis
     ports:
       - "6379:6379"
-    # Enable AOF persistence
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
     networks:
@@ -148,23 +151,23 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart:  unless-stopped
 
   # ========================================
   # PROMETHEUS (Metrics)
   # ========================================
   prometheus:
-    image: prom/prometheus:v2.47.0
+    image: prom/prometheus:v2.48.0
     container_name: ecommerce-prometheus
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
       - '--web.enable-lifecycle'
     networks:
       - ecommerce-network
@@ -173,30 +176,168 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   # ========================================
-  # GRAFANA (Dashboards - Optional)
+  # GRAFANA (Dashboards)
   # ========================================
   grafana:
-    image:  grafana/grafana:10.2.0
+    image: grafana/grafana:10.2.2
     container_name: ecommerce-grafana
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
-      - GF_USERS_ALLOW_SIGN_UP=false
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: false
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning
     networks:
       - ecommerce-network
     depends_on:
       - prometheus
     healthcheck:
-      test: ["CMD", "wget", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      test:  ["CMD", "wget", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+  # ========================================
+  # ORDER SERVICE
+  # ========================================
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: src/main/docker/Dockerfile.native-micro-multistage
+    image: ecommerce/order-service:native-micro
+    container_name: ecommerce-order-service
+    ports:
+      - "8081:8080"
+    environment:
+      QUARKUS_DATASOURCE_JDBC_URL: ${ORDER_SERVICE_DB_URL}
+      QUARKUS_DATASOURCE_USERNAME: ${ORDER_SERVICE_DB_USER}
+      QUARKUS_DATASOURCE_PASSWORD: ${ORDER_SERVICE_DB_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      QUARKUS_LOG_CONSOLE_JSON: ${LOG_JSON_ENABLED}
+      QUARKUS_LOG_LEVEL: ${LOG_LEVEL}
+      QUARKUS_HTTP_PORT: 8080
+      QUARKUS_HTTP_HOST: 0.0.0.0
+    networks:
+      - ecommerce-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+      kafka:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "true"]  # ← Simplificado (UBI Micro não tem wget/curl)
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # ========================================
+  # PRODUCT SERVICE
+  # ========================================
+  product-service:
+    build:
+      context:  ./product-service
+      dockerfile: src/main/docker/Dockerfile.native-micro-multistage
+    image: ecommerce/product-service:native-micro
+    container_name: ecommerce-product-service
+    ports:
+      - "8082:8080"
+    environment:
+      QUARKUS_MONGODB_CONNECTION_STRING: ${PRODUCT_SERVICE_MONGODB_URI}
+      QUARKUS_MONGODB_DATABASE: ${PRODUCT_SERVICE_MONGODB_DATABASE}
+      QUARKUS_REDIS_HOSTS: ${PRODUCT_SERVICE_REDIS_URI}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      QUARKUS_LOG_CONSOLE_JSON: ${LOG_JSON_ENABLED}
+      QUARKUS_LOG_LEVEL: ${LOG_LEVEL}
+      QUARKUS_HTTP_PORT: 8080
+      QUARKUS_HTTP_HOST: 0.0.0.0
+    networks:
+      - ecommerce-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition:  service_healthy
+      kafka:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "true"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # ========================================
+  # NOTIFICATION SERVICE
+  # ========================================
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: src/main/docker/Dockerfile.native-micro-multistage
+    image: ecommerce/notification-service:native-micro
+    container_name:  ecommerce-notification-service
+    ports:
+      - "8083:8080"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}
+      DISCORD_WEBHOOK_ENABLED: ${DISCORD_WEBHOOK_ENABLED}
+      NOTIFICATION_DISCORD_ENABLED: ${NOTIFICATION_DISCORD_ENABLED}
+      BREVO_API_KEY: ${BREVO_API_KEY}
+      BREVO_SENDER_NAME: ${BREVO_SENDER_NAME}
+      BREVO_SENDER_EMAIL: ${BREVO_SENDER_EMAIL}
+      NOTIFICATION_EMAIL_ENABLED: ${NOTIFICATION_EMAIL_ENABLED}
+      QUARKUS_LOG_CONSOLE_JSON: ${LOG_JSON_ENABLED}
+      QUARKUS_LOG_LEVEL: ${LOG_LEVEL}
+      QUARKUS_HTTP_PORT: 8080
+      QUARKUS_HTTP_HOST: 0.0.0.0
+    networks:
+      - ecommerce-network
+    depends_on:
+      kafka:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "true"]
       interval:  10s
       timeout: 5s
       retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
 
 # ========================================
 # VOLUMES
@@ -208,9 +349,15 @@ volumes:
     driver: local
   redis_data:
     driver:  local
+  kafka_data:
+    driver: local
   prometheus_data:
     driver: local
   grafana_data:
+    driver: local
+  zookeeper_data:
+    driver: local
+  zookeeper_log:
     driver: local
 
 # ========================================
