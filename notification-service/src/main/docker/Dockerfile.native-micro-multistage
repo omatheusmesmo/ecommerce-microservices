@@ -1,0 +1,50 @@
+####
+# Multi-stage native build with UBI Micro (minimal size + maximum security)
+# No manual build required - just run: docker-compose up -d
+####
+
+## ============================================
+## STAGE 1: BUILD
+## ============================================
+FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21 AS build
+
+USER quarkus
+WORKDIR /code
+
+# Copy Maven wrapper and POM (cached layer)
+COPY --chown=quarkus:quarkus mvnw /code/mvnw
+COPY --chown=quarkus:quarkus .mvn /code/.mvn
+COPY --chown=quarkus:quarkus pom.xml /code/
+
+# Download dependencies (cached unless pom.xml changes)
+RUN ./mvnw dependency:go-offline -B
+
+# Copy source code
+COPY --chown=quarkus:quarkus src /code/src
+
+# Build native executable
+RUN ./mvnw package -Pnative -DskipTests
+
+## ============================================
+## STAGE 2: RUNTIME (UBI MICRO)
+## ============================================
+FROM quay.io/quarkus/quarkus-micro-image:2.0
+
+WORKDIR /work/
+
+# Set proper permissions
+RUN chown 1001 /work \
+    && chmod "g+rwX" /work \
+    && chown 1001:root /work
+
+# Copy native executable from build stage
+COPY --from=build --chown=1001:root --chmod=0755 /code/target/*-runner /work/application
+
+# Expose application port
+EXPOSE 8080
+
+# Run as non-root user
+USER 1001
+
+# Start application
+ENTRYPOINT ["./application", "-Dquarkus.http.host=0.0.0.0"]
