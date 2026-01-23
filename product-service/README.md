@@ -1,70 +1,155 @@
-# product-service
+# Product Service
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+The Product Service is a microservice within the E-commerce Microservices architecture, responsible for managing product catalog operations. It provides RESTful APIs for CRUD operations on products, handles stock management, and integrates with other services via Kafka messaging for event-driven communication.
 
-If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
+Built with Quarkus, this service leverages MongoDB for data persistence, Redis for caching, and Kafka for asynchronous messaging.
 
-## Running the application in dev mode
+## Prerequisites
 
-You can run your application in dev mode that enables live coding using:
-```shell script
+- Java 21 or higher
+- Maven 3.8+
+- Docker (optional, for Dev Services or containerized deployment)
+
+## Dependencies
+
+The service uses the following key Quarkus extensions and libraries:
+
+- **quarkus-mongodb-panache**: For MongoDB integration with Panache ORM
+- **quarkus-redis-cache**: For Redis-based caching
+- **quarkus-messaging-kafka**: For Kafka messaging
+- **quarkus-rest-jackson**: For REST API with JSON serialization
+- **quarkus-smallrye-health**: For health checks
+- **quarkus-micrometer-registry-prometheus**: For metrics export
+- **quarkus-hibernate-validator**: For input validation
+
+## Business Rules
+
+### Product Entity
+- **Name**: Required, 2-100 characters
+- **Description**: Optional, up to 500 characters
+- **Price**: Required, greater than 0.01
+- **Stock**: Required, non-negative integer
+- **Category**: Required, 2-50 characters
+- **Active**: Boolean flag, defaults to true
+- **Timestamps**: Created and updated automatically
+
+### Operations
+- **Create**: Validates input, persists to MongoDB, publishes `product-created` event
+- **Read**: Supports listing all, by ID, by category, and active products; uses Redis caching
+- **Update**: Validates input, updates stock if changed (publishes `stock-changed` event), publishes `product-updated` event
+- **Delete**: Removes product, publishes `product-deleted` event
+- **Stock Management**: Decreases stock on order events (`order-created`), increases on restock; publishes `stock-changed` events
+
+### Validation
+All inputs are validated using Bean Validation annotations. Invalid requests return appropriate HTTP status codes.
+
+### Caching
+- Redis-backed caching for query results (TTL: 5-10 minutes)
+- Cache invalidation on updates/deletes
+
+## API Endpoints
+
+Base path: `/products`
+
+| Method | Endpoint | Description | Response |
+|--------|----------|-------------|----------|
+| GET | `/products` | Retrieve all products | 200 OK - List of products |
+| GET | `/products/{id}` | Retrieve product by ID | 200 OK - Product or 404 Not Found |
+| GET | `/products/category/{category}` | Retrieve products by category | 200 OK - List of products |
+| GET | `/products/active` | Retrieve active products | 200 OK - List of products |
+| POST | `/products` | Create a new product | 201 Created - Product |
+| PUT | `/products/{id}` | Update an existing product | 200 OK - Product or 404 Not Found |
+| DELETE | `/products/{id}` | Delete a product | 204 No Content or 404 Not Found |
+
+All endpoints return JSON responses. POST and PUT require valid Product JSON in the request body.
+
+## Kafka Topics
+
+### Producers
+- **product-created**: Published when a new product is created
+- **product-updated**: Published when a product is updated
+- **product-deleted**: Published when a product is deleted
+- **stock-changed**: Published when product stock changes (purchase, restock, adjustment)
+
+### Consumers
+- **order-created**: Consumed to decrease stock for ordered products
+
+Events use JSON serialization and include relevant product data.
+
+## Running the Application
+
+### Development Environment
+
+For local development, use Quarkus Dev Services to automatically start MongoDB, Redis, and Kafka containers:
+
+```bash
 ./mvnw compile quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
+This command:
+- Starts the application in dev mode with hot reload
+- Launches Dev Services containers for MongoDB, Redis, and Kafka
+- Enables the Dev UI at http://localhost:8080/q/dev/
 
-## Packaging and running the application
+Access the application at http://localhost:8080.
 
-The application can be packaged using:
-```shell script
-./mvnw package
-```
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+### Production Environment
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+For production, ensure external services are available and configure via environment variables:
 
-If you want to build an _über-jar_, execute the following command:
-```shell script
+```bash
+export QUARKUS_MONGODB_CONNECTION_STRING=mongodb://your-mongo-host:27017
+export QUARKUS_MONGODB_DATABASE=your-database
+export QUARKUS_REDIS_HOSTS=redis://your-redis-host:6379
+export KAFKA_BOOTSTRAP_SERVERS=your-kafka-host:9092
 ./mvnw package -Dquarkus.package.type=uber-jar
+java -jar target/*-runner.jar
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+## Observability
 
-## Creating a native executable
+### Health Checks
+- Endpoint: `/q/health`
+- Provides readiness and liveness probes
 
-You can create a native executable using: 
-```shell script
+### Metrics
+- Endpoint: `/q/metrics`
+- Exports Prometheus-compatible metrics for monitoring
+
+### Logging
+- Configurable levels via `application.properties`
+- JSON format in production for log aggregation
+
+## Building and Packaging
+
+### Standard JAR
+```bash
+./mvnw package
+java -jar target/quarkus-app/quarkus-run.jar
+```
+
+### Uber JAR
+```bash
+./mvnw package -Dquarkus.package.type=uber-jar
+java -jar target/*-runner.jar
+```
+
+### Native Executable
+```bash
 ./mvnw package -Dnative
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using: 
-```shell script
+# Or with Docker:
 ./mvnw package -Dnative -Dquarkus.native.container-build=true
+./target/product-service-1.0.0-SNAPSHOT-runner
 ```
 
-You can then execute your native executable with: `./target/product-service-1.0.0-SNAPSHOT-runner`
+## Configuration
 
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.
+Key configuration properties (see `application.properties`):
 
-## Related Guides
+- Database: MongoDB connection and pool settings
+- Cache: Redis hosts and TTL configurations
+- Messaging: Kafka brokers and topic configurations
+- Observability: Health and metrics paths
+- Logging: Levels and formats
 
-- SmallRye Health ([guide](https://quarkus.io/guides/smallrye-health)): Monitor service health
-- MongoDB with Panache ([guide](https://quarkus.io/guides/mongodb-panache)): Simplify your persistence code for MongoDB via the active record or the repository pattern
-- REST Jackson ([guide](https://quarkus.io/guides/rest#json-serialisation)): Jackson serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it
-- Redis Cache ([guide](https://quarkus.io/guides/cache-redis-reference)): Use Redis as the caching backend
-- Micrometer Registry Prometheus ([guide](https://quarkus.io/guides/micrometer)): Enable Prometheus support for Micrometer
-
-## Provided Code
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
-
-### SmallRye Health
-
-Monitor your application's health using SmallRye Health
-
-[Related guide section...](https://quarkus.io/guides/smallrye-health)
+Environment variables can override defaults for different environments.
