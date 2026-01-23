@@ -1,9 +1,11 @@
 package com.ecommerce.dto;
 
-import java. math.BigDecimal;
+import io.quarkus.runtime.annotations.RegisterForReflection;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@RegisterForReflection
 public record OrderCreatedEvent(
         Long orderId,
         String customerName,
