@@ -1,9 +1,11 @@
 package com.ecommerce.event;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@RegisterForReflection
 public record OrderCreatedEvent(
         Long orderId,
         String customerName,
@@ -13,6 +15,7 @@ public record OrderCreatedEvent(
         List<OrderItemEvent> items,
         LocalDateTime createdAt
 ) {
+    @RegisterForReflection
     public record OrderItemEvent(
             String productId,
             String productName,
