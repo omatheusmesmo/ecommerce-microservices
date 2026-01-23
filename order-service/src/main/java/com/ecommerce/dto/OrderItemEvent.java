@@ -1,7 +1,9 @@
 package com.ecommerce.dto;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import java.math.BigDecimal;
 
+@RegisterForReflection
 public record OrderItemEvent(
         String productId,
         String productName,
