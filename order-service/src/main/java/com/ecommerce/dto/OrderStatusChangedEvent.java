@@ -1,9 +1,10 @@
 package com.ecommerce.dto;
 
 import com.ecommerce.entity.OrderStatus;
-
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import java.time.LocalDateTime;
 
+@RegisterForReflection
 public record OrderStatusChangedEvent(
         Long orderId,
         String customerEmail,
