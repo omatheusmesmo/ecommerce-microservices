@@ -20,7 +20,7 @@ This is the order-service microservice for the e-commerce platform, built with Q
 ### Order Lifecycle
 - Orders start in **PENDING** status upon creation.
 - Statuses: PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED.
-- Total amount is calculated as the sum of item subtotals (quantity * unitPrice).
+- Total amount is calculated as the sum of item subtotals plus shipping cost.
 - Orders can be updated to any status, but cancellations are restricted:
   - Cannot cancel a **DELIVERED** order.
   - Cannot cancel an already **CANCELLED** order.
@@ -77,6 +77,7 @@ Published when a new order is created.
   "customerEmail": "joao@example.com",
   "status": "PENDING",
   "totalAmount": 100.00,
+  "shippingCost": 10.00,
   "items": [
     {
       "productId": "prod-123",
@@ -110,6 +111,7 @@ Published on status updates or cancellations.
 - customer_email (VARCHAR(255))
 - status (VARCHAR(50))
 - total_amount (DECIMAL(10,2))
+- shipping_cost (DECIMAL(10,2))
 - created_at (TIMESTAMP)
 - updated_at (TIMESTAMP)
 
