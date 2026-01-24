@@ -13,6 +13,7 @@ public record OrderCreatedEvent(
         String customerEmail,
         String status,
         BigDecimal totalAmount,
+        BigDecimal shippingCost,
         List<OrderItemEvent> items,
         LocalDateTime createdAt
 ) {
@@ -23,6 +24,7 @@ public record OrderCreatedEvent(
                 orderResponse. customerEmail(),
                 orderResponse. status().name(),  // Enum → String
                 orderResponse.totalAmount(),
+                orderResponse.shippingCost(), // Assuming shippingCost() method exists in OrderResponse
                 orderResponse.items().stream()
                         .map(OrderItemEvent::from)
                         .toList(),

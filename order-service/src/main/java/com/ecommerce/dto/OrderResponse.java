@@ -13,6 +13,7 @@ public record OrderResponse(
         String customerEmail,
         OrderStatus status,
         BigDecimal totalAmount,
+        BigDecimal shippingCost,
         List<OrderItemResponse> items,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
@@ -24,6 +25,7 @@ public record OrderResponse(
                 order.customerEmail,
                 order.status,
                 order.totalAmount,
+                order.shippingCost,
                 order.getItems().stream()
                         .map(OrderItemResponse::from)
                         .toList(),
@@ -39,6 +41,7 @@ public record OrderResponse(
                 order.customerEmail,
                 order. status,
                 order.totalAmount,
+                order.shippingCost,
                 List.of(),
                 order.createdAt,
                 order.updatedAt
