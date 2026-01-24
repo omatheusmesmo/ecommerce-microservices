@@ -1,7 +1,7 @@
 package com.ecommerce.messaging;
 
-import com.ecommerce.dto.OrderCreatedEvent;
-import com.ecommerce.dto.OrderStatusChangedEvent;
+import com.ecommerce.event.OrderCreatedEvent;
+import com.ecommerce.event.OrderStatusChangedEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.reactive.messaging.Channel;

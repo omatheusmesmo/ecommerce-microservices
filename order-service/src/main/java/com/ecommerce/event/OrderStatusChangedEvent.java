@@ -1,4 +1,4 @@
-package com.ecommerce.dto;
+package com.ecommerce.event;
 
 import com.ecommerce.entity.OrderStatus;
 import io.quarkus.runtime.annotations.RegisterForReflection;

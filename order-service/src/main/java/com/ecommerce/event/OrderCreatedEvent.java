@@ -1,5 +1,6 @@
-package com.ecommerce.dto;
+package com.ecommerce.event;
 
+import com.ecommerce.dto.OrderResponse;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

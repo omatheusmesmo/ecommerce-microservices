@@ -4,6 +4,8 @@ import com.ecommerce.dto.*;
 import com.ecommerce. entity.Order;
 import com. ecommerce.entity.OrderItem;
 import com.ecommerce.entity.OrderStatus;
+import com.ecommerce.event.OrderCreatedEvent;
+import com.ecommerce.event.OrderStatusChangedEvent;
 import com. ecommerce.messaging.OrderEventProducer;
 import com.ecommerce.repository.OrderRepository;
 import com.ecommerce. repository.OrderItemRepository;
