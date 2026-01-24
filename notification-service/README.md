@@ -1,83 +1,94 @@
-# notification-service
+# Notification Service
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+This service is responsible for sending notifications in an e-commerce system, using Kafka events to trigger notifications via Discord and email.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+## Technologies
 
-## Running the application in dev mode
+- **Java 17+**
+- **Quarkus** (main framework)
+- **Kafka** (messaging)
+- **Discord Webhook** (Discord notifications)
+- **Brevo (Sendinblue)** (email)
+- **Maven** (dependency management)
 
-You can run your application in dev mode that enables live coding using:
+## Features
 
-```shell script
-./mvnw quarkus:dev
-```
+- Consuming Kafka events for notifications on orders, products, and stock.
+- Sending notifications via Discord (webhook) and email (Brevo API).
+- Profile-based configuration (dev/prod) to enable/disable notifications.
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+## Configuration
 
-## Packaging and running the application
+### application.properties
 
-The application can be packaged using:
+Main configurations in `src/main/resources/application.properties`:
 
-```shell script
-./mvnw package
-```
+- **HTTP Port**: `quarkus.http.port=8080`
+- **Discord**:
+    - `discord.webhook.url`: Webhook URL (environment variable `DISCORD_WEBHOOK_URL`)
+    - `discord.webhook.enabled`: Enables webhook (default: true)
+    - `notification.discord.enabled`: Enables Discord notifications (default: true, disabled in dev)
+- **Email (Brevo)**:
+    - `brevo.api.key`: API key (environment variable `BREVO_API_KEY`)
+    - `brevo.api.url`: API URL (default: https://api.brevo.com/v3)
+    - `brevo.sender.name`: Sender name (default: BestEcommerce)
+    - `brevo.sender.email`: Sender email (default: noreply@example.com)
+    - `notification.email.enabled`: Enables email notifications (default: false)
+- **Kafka**:
+    - `kafka.bootstrap.servers`: Kafka servers (default: localhost:9093)
+    - Dev services: `%dev.quarkus.kafka.devservices.enabled=true` (starts local Kafka in dev)
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+### Profiles
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+- **Dev**: Notifications disabled by default, Kafka dev services enabled.
+- **Prod**: Notifications enabled, JSON logs.
 
-If you want to build an _über-jar_, execute the following command:
+## Consumed Kafka Topics
 
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
-```
+- `order-created`: Order created event.
+- `order-status-changed`: Order status change event.
+- `product-created`: Product created event.
+- `stock-changed`: Stock change event.
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+## Endpoints
 
-## Creating a native executable
+This service is event-driven and does not expose public REST endpoints. It consumes Kafka messages and sends notifications.
 
-You can create a native executable using:
+## How to Run
 
-```shell script
-./mvnw package -Dnative
-```
+1. **Prerequisites**: Java 21+, Maven.
+2. **Environment Variables** (optional for dev):
+    - `DISCORD_WEBHOOK_URL`
+    - `BREVO_API_KEY`
+    - `BREVO_SENDER_NAME`
+    - `BREVO_SENDER_EMAIL`
+3. **Run in dev**:
+   ```bash
+   mvn quarkus:dev
+   ```
+    - Starts local Kafka automatically.
+    - Notifications disabled to avoid external calls.
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+4. **Run in prod**:
+   ```bash
+   mvn quarkus:dev -Dquarkus.profile=prod
+   ```
 
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
+## Observability
 
-You can then execute your native executable with: `./target/notification-service-1.0.0-SNAPSHOT-runner`
+- **Health Check**: `/q/health`
+- **Metrics**: `/q/metrics` (Prometheus)
+- **Logs**: INFO level, DEBUG for `com.ecommerce` in dev.
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+## Development
 
-## Related Guides
+- **Code Structure**:
+    - `provider/`: Notification providers (Discord, Email).
+    - `client/`: Clients for external APIs (Discord, Brevo).
+    - `dto/`: Data transfer objects.
+    - `service/`: Business logic (NotificationService).
+    - `event/`: Kafka events.
 
-- REST Jackson ([guide](https://quarkus.io/guides/rest#json-serialisation)): Jackson serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it
-- SmallRye Health ([guide](https://quarkus.io/guides/smallrye-health)): Monitor service health
-- Messaging - Kafka Connector ([guide](https://quarkus.io/guides/kafka-getting-started)): Connect to Kafka with Reactive Messaging
-- Logging JSON ([guide](https://quarkus.io/guides/logging#json-logging)): Add JSON formatter for console logging
-- Micrometer Registry Prometheus ([guide](https://quarkus.io/guides/micrometer)): Enable Prometheus support for Micrometer
+- **Tests**: Run `mvn test` for unit tests.
 
-## Provided Code
-
-### Messaging codestart
-
-Use Quarkus Messaging
-
-[Related Apache Kafka guide section...](https://quarkus.io/guides/kafka-reactive-getting-started)
-
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
-
-### SmallRye Health
-
-Monitor your application's health using SmallRye Health
-
-[Related guide section...](https://quarkus.io/guides/smallrye-health)
+For more details, refer to the source code.
