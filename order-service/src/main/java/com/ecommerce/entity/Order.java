@@ -30,6 +30,9 @@ public class Order extends PanacheEntity {
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
     public BigDecimal totalAmount;
 
+    @Column(name = "shipping_cost", nullable = false, precision = 10, scale = 2)
+    public BigDecimal shippingCost;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     public LocalDateTime createdAt;
 
@@ -42,6 +45,7 @@ public class Order extends PanacheEntity {
     public Order() {
         this.status = OrderStatus. PENDING;
         this.totalAmount = BigDecimal.ZERO;
+        this.shippingCost = BigDecimal.ZERO;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime. now();
     }
@@ -67,9 +71,10 @@ public class Order extends PanacheEntity {
     }
 
     public void calculateTotal() {
-        this.totalAmount = items.stream()
+        BigDecimal subtotal = items.stream()
                 .map(OrderItem::getSubtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        this.totalAmount = subtotal.add(this.shippingCost);
     }
 
     @PreUpdate
