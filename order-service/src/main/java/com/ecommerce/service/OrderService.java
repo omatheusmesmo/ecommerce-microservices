@@ -37,6 +37,7 @@ public class OrderService {
         LOG.infof("Creating order for customer: %s", request.customerName());
 
         Order order = new Order(request.customerName(), request.customerEmail());
+        order.shippingCost = request.shippingCost();
 
         for (var itemReq : request.items()) {
             OrderItem item = new OrderItem(
