@@ -1,87 +1,163 @@
 # order-service
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+This is the order-service microservice for the e-commerce platform, built with Quarkus. It manages the lifecycle of customer orders, including creation, status updates, and cancellations. The service integrates with PostgreSQL for data persistence, Kafka for event publishing, and uses Flyway for database migrations.
 
-If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
+## Tech Stack
+- **Framework**: Quarkus 3.30.6
+- **Database**: PostgreSQL with Hibernate ORM Panache
+- **Messaging**: Kafka with SmallRye Reactive Messaging
+- **Migrations**: Flyway
+- **Validation**: Hibernate Validator
+- **Observability**: SmallRye Health, Micrometer Prometheus
+- **Build**: Maven
 
-## Running the application in dev mode
+## Prerequisites
+- Java 21+
+- Maven 3.6+
 
-You can run your application in dev mode that enables live coding using:
-```shell script
+## Business Rules
+
+### Order Lifecycle
+- Orders start in **PENDING** status upon creation.
+- Statuses: PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED.
+- Total amount is calculated as the sum of item subtotals (quantity * unitPrice).
+- Orders can be updated to any status, but cancellations are restricted:
+  - Cannot cancel a **DELIVERED** order.
+  - Cannot cancel an already **CANCELLED** order.
+
+### Validation
+- Customer name: 3-100 characters, required.
+- Customer email: Valid email format, required.
+- Items: At least one item required.
+- Product name: 3-200 characters.
+- Quantity: Minimum 1.
+- Unit price: Greater than 0.
+
+## API Endpoints
+
+All endpoints return JSON responses. Use `Content-Type: application/json` for POST/PUT requests.
+
+### Create Order
+- **POST** `/orders`
+- Body: `CreateOrderRequest`
+- Creates a new order, calculates total, and publishes `order-created` event.
+
+### List All Orders
+- **GET** `/orders`
+- Returns a list of orders without items.
+
+### Get Order by ID
+- **GET** `/orders/{id}`
+- Returns full order details including items.
+
+### Get Orders by Status
+- **GET** `/orders/status/{status}`
+- Status: PENDING, CONFIRMED, etc.
+
+### Get Orders by Customer Email
+- **GET** `/orders/customer/{email}`
+
+### Update Order Status
+- **PUT** `/orders/{id}/status`
+- Body: `{"status": "CONFIRMED"}`
+- Publishes `order-status-changed` event.
+
+### Cancel Order
+- **PATCH** `/orders/{id}/cancel`
+- Publishes `order-status-changed` event.
+
+## Kafka Topics
+
+### order-created
+Published when a new order is created.
+```json
+{
+  "orderId": 1,
+  "customerName": "João Silva",
+  "customerEmail": "joao@example.com",
+  "status": "PENDING",
+  "totalAmount": 100.00,
+  "items": [
+    {
+      "productId": "prod-123",
+      "productName": "Produto Exemplo",
+      "quantity": 2,
+      "unitPrice": 50.00,
+      "subtotal": 100.00
+    }
+  ],
+  "createdAt": "2023-10-01T10:00:00"
+}
+```
+
+### order-status-changed
+Published on status updates or cancellations.
+```json
+{
+  "orderId": 1,
+  "customerEmail": "joao@example.com",
+  "oldStatus": "PENDING",
+  "newStatus": "CONFIRMED",
+  "changedAt": "2023-10-01T10:05:00"
+}
+```
+
+## Database Schema
+
+### orders
+- id (BIGINT, PK)
+- customer_name (VARCHAR(255))
+- customer_email (VARCHAR(255))
+- status (VARCHAR(50))
+- total_amount (DECIMAL(10,2))
+- created_at (TIMESTAMP)
+- updated_at (TIMESTAMP)
+
+### order_items
+- id (BIGINT, PK)
+- product_id (VARCHAR(255))
+- product_name (VARCHAR(255))
+- quantity (INTEGER)
+- unit_price (DECIMAL(10,2))
+- order_id (BIGINT, FK to orders.id)
+
+Indexes on customer_email, status, order_id, product_id.
+
+## Configuration
+
+Key properties in `application.properties`:
+
+- **Database**: `quarkus.datasource.*` for PostgreSQL connection.
+- **Kafka**: `mp.messaging.outgoing.*` for producers, `kafka.bootstrap.servers` for brokers.
+- **Flyway**: `quarkus.flyway.*` for migrations.
+- **Profiles**: dev, test, prod with different settings (e.g., schema generation, logging).
+
+## Running the Application
+
+### Dev Mode
+```bash
 ./mvnw compile quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
-
-## Packaging and running the application
-
-The application can be packaged using:
-```shell script
+### Production
+```bash
 ./mvnw package
-```
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
-
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-```shell script
-./mvnw package -Dquarkus.package.type=uber-jar
+java -jar target/quarkus-app/quarkus-run.jar
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
-
-## Creating a native executable
-
-You can create a native executable using: 
-```shell script
+### Native Build
+```bash
 ./mvnw package -Dnative
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using: 
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
+## Health and Metrics
 
-You can then execute your native executable with: `./target/order-service-1.0.0-SNAPSHOT-runner`
+- Health: `/q/health`
+- Metrics: `/q/metrics`
 
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.
+## Error Handling
 
-## Related Guides
-
-- Hibernate ORM with Panache ([guide](https://quarkus.io/guides/hibernate-orm-panache)): Simplify your persistence code for Hibernate ORM via the active record or the repository pattern
-- SmallRye Health ([guide](https://quarkus.io/guides/smallrye-health)): Monitor service health
-- Messaging - Kafka Connector ([guide](https://quarkus.io/guides/kafka-getting-started)): Connect to Kafka with Reactive Messaging
-- JDBC Driver - PostgreSQL ([guide](https://quarkus.io/guides/datasource)): Connect to the PostgreSQL database via JDBC
-- REST Jackson ([guide](https://quarkus.io/guides/rest#json-serialisation)): Jackson serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it
-- Micrometer Registry Prometheus ([guide](https://quarkus.io/guides/micrometer)): Enable Prometheus support for Micrometer
-
-## Provided Code
-
-### Hibernate ORM
-
-Create your first JPA entity
-
-[Related guide section...](https://quarkus.io/guides/hibernate-orm)
-
-[Related Hibernate with Panache section...](https://quarkus.io/guides/hibernate-orm-panache)
-
-
-### Messaging codestart
-
-Use Quarkus Messaging
-
-[Related Apache Kafka guide section...](https://quarkus.io/guides/kafka-reactive-getting-started)
-
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
-
-### SmallRye Health
-
-Monitor your application's health using SmallRye Health
-
-[Related guide section...](https://quarkus.io/guides/smallrye-health)
+Handled via `GlobalExceptionMapper`:
+- 400 Bad Request for validation/illegal operations.
+- 404 Not Found for missing resources.
+- 500 Internal Server Error for unexpected issues.
