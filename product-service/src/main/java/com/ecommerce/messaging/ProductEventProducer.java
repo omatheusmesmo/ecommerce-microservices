@@ -4,6 +4,7 @@ import com.ecommerce.event.ProductCreatedEvent;
 import com.ecommerce.event.ProductDeletedEvent;
 import com.ecommerce.event.ProductUpdatedEvent;
 import com.ecommerce.event.StockChangedEvent;
+import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.smallrye.reactive.messaging.kafka.api.OutgoingKafkaRecordMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -16,15 +17,19 @@ public class ProductEventProducer {
 
     private static final Logger LOG = Logger.getLogger(ProductEventProducer.class);
 
+    @Broadcast
     @Channel("product-created")
     Emitter<ProductCreatedEvent> productCreatedEmitter;
 
+    @Broadcast
     @Channel("product-updated")
     Emitter<ProductUpdatedEvent> productUpdatedEmitter;
 
+    @Broadcast
     @Channel("product-deleted")
     Emitter<ProductDeletedEvent> productDeletedEmitter;
 
+    @Broadcast
     @Channel("stock-changed")
     Emitter<StockChangedEvent> stockChangedEmitter;
 
