@@ -22,6 +22,7 @@ import org.jboss.logging.Logger;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @ApplicationScoped
 public class UserService {
@@ -38,8 +39,8 @@ public class UserService {
     Event<TokenConfirmationEvent> tokenConfirmationEventEmitter;
 
     @Inject
-    @ConfigProperty(name = "ADMIN_PASSWORD", defaultValue = "")
-    String adminPassword;
+    @ConfigProperty(name = "ADMIN_PASSWORD")
+    Optional<String> adminPassword;
 
     @Inject
     @ConfigProperty(name = "app.frontend.base-url")
@@ -48,8 +49,8 @@ public class UserService {
     @Transactional
     void onStart(@Observes StartupEvent ev) {
         if (User.count("role = ?1", Role.ADMIN) == 0) {
-            if (adminPassword != null && !adminPassword.isBlank()) {
-                registerAdmin(adminPassword);
+            if (adminPassword.isPresent() && !adminPassword.get().isBlank()) {
+                registerAdmin(adminPassword.get());
             } else {
                 LOG.warn("ADMIN_PASSWORD not set; skipping initial admin provisioning");
             }
