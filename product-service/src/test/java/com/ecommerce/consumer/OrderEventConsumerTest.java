@@ -6,12 +6,16 @@ import com.ecommerce.event.OrderCreatedEvent;
 import com.ecommerce.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
 import jakarta.inject.Inject;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.eclipse.microprofile.reactive.messaging.Metadata;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -31,6 +35,9 @@ public class OrderEventConsumerTest {
 
     @Inject
     ObjectMapper objectMapper;
+
+    @Inject
+    OrderEventConsumer orderEventConsumer;
 
     private KafkaProducer<String, String> createProducer() {
         Properties props = new Properties();
@@ -78,5 +85,30 @@ public class OrderEventConsumerTest {
         await().atMost(30, TimeUnit.SECONDS).until(() -> productService.findById(productId).stock == 13);
         Product updated = productService.findById(productId);
         assertEquals(13, updated.stock);
+    }
+
+    @Test
+    public void onOrderEvent_isIdempotent_whenSameKafkaRecordRedelivered() throws Exception {
+        Product product = new Product("Test Product Idempotent", "Description", new BigDecimal("100.00"), 10, "Test Category");
+        Product created = productService.create(product);
+        String productId = created.id.toString();
+
+        OrderCreatedEvent.OrderItemEvent item = new OrderCreatedEvent.OrderItemEvent(productId, "Test Product Idempotent", 2, new BigDecimal("100.00"), new BigDecimal("200.00"));
+        OrderCreatedEvent event = new OrderCreatedEvent(999L, "Customer", "customer@example.com", "CONFIRMED", new BigDecimal("200.00"), List.of(item), LocalDateTime.now());
+        String eventJson = objectMapper.writeValueAsString(event);
+
+        Message<String> kafkaMessage = toRedeliveredKafkaMessage(eventJson, productId.hashCode());
+
+        orderEventConsumer.onOrderEvent(kafkaMessage);
+        orderEventConsumer.onOrderEvent(kafkaMessage);
+
+        Product updated = productService.findById(productId);
+        assertEquals(8, updated.stock);
+    }
+
+    private Message<String> toRedeliveredKafkaMessage(String payload, long offset) {
+        ConsumerRecord<String, String> record = new ConsumerRecord<>("outbox.event.Order", 0, offset, "key", payload);
+        IncomingKafkaRecordMetadata<String, String> metadata = new IncomingKafkaRecordMetadata<>(record, "order-events");
+        return Message.of(payload, Metadata.of(metadata));
     }
 }
