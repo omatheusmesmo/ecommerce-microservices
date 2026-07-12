@@ -48,9 +48,10 @@ public class UserService {
     @Transactional
     void onStart(@Observes StartupEvent ev) {
         if (User.count("role = ?1", Role.ADMIN) == 0) {
-            LOG.debugf("Admin Password: %s", adminPassword);
-            if (adminPassword != null) {
+            if (adminPassword != null && !adminPassword.isBlank()) {
                 registerAdmin(adminPassword);
+            } else {
+                LOG.warn("ADMIN_PASSWORD not set; skipping initial admin provisioning");
             }
         }
     }

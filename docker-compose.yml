@@ -178,18 +178,18 @@ services:
       - |
         # Install required tools
         apk add --no-cache curl gettext jq
-        
+
         echo '⏳ Waiting for Kafka Connect to be ready...'
         until curl -s http://kafka-connect:8083/connectors > /dev/null 2>&1; do
           echo 'Kafka Connect not ready, retrying in 5s...'
           sleep 5
         done
         echo '✅ Kafka Connect is ready!'
-        
+
         echo '🔧 Preparing connector configuration with environment variables...'
         # Use envsubst ONLY for specific variables (preserve ${routedByValue} for Debezium)
         envsubst '$$POSTGRES_HOSTNAME $$POSTGRES_PORT $$POSTGRES_USER $$POSTGRES_PASSWORD $$POSTGRES_DB' < /config/connector-template.json > /tmp/connector.json
-        
+
         echo '📋 Checking if connector exists and deleting if found...'
         EXISTING=$$(curl -s http://kafka-connect:8083/connectors)
         if echo "$$EXISTING" | grep -q 'order-service-outbox-connector'; then
@@ -197,30 +197,30 @@ services:
           curl -s -X DELETE http://kafka-connect:8083/connectors/order-service-outbox-connector
           sleep 3
         fi
-        
+
         echo '🔧 Registering Debezium outbox connector...'
         echo ''
-        
+
         # Register connector
         HTTP_CODE=$$(curl -s -o /tmp/response.json -w "%{http_code}" -X POST http://kafka-connect:8083/connectors \
           -H "Content-Type: application/json" \
           -d @/tmp/connector.json)
-        
+
         echo "HTTP Status: [$$HTTP_CODE]"
         echo "Response:"
         cat /tmp/response.json | jq '.' 2>/dev/null || cat /tmp/response.json
         echo ''
-        
+
         if [ "$$HTTP_CODE" != "201" ]; then
           echo "❌ Failed to register connector (HTTP $$HTTP_CODE)"
           exit 1
         fi
-        
+
         echo "✅ Connector registered successfully!"
-        
+
         # Clean up
         rm -f /tmp/connector.json /tmp/response.json
-        
+
         echo ''
         echo '📊 Connector status:'
         sleep 2
@@ -606,7 +606,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       DB_URL: ${AUTH_SERVICE_DB_URL}
       DB_USERNAME: ${AUTH_SERVICE_DB_USER}
       DB_PASSWORD: ${AUTH_SERVICE_DB_PASSWORD}
