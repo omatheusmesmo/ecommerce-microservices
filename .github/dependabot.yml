@@ -1,0 +1,87 @@
+version: 2
+updates:
+  # Maven dependencies — one entry per service, each has its own pom.xml
+  - package-ecosystem: "maven"
+    directory: "/authentication-service"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "authentication-service"
+
+  - package-ecosystem: "maven"
+    directory: "/product-service"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "product-service"
+
+  - package-ecosystem: "maven"
+    directory: "/order-service"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "order-service"
+
+  - package-ecosystem: "maven"
+    directory: "/notification-service"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "notification-service"
+
+  # Docker base images — one entry per service's Dockerfile set
+  - package-ecosystem: "docker"
+    directory: "/authentication-service/src/main/docker"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "authentication-service"
+
+  - package-ecosystem: "docker"
+    directory: "/product-service/src/main/docker"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "product-service"
+
+  - package-ecosystem: "docker"
+    directory: "/order-service/src/main/docker"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "order-service"
+
+  - package-ecosystem: "docker"
+    directory: "/notification-service/src/main/docker"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "notification-service"
+
+  # docker-compose.yml image pins at the repo root
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+
+  # GitHub Actions workflow versions (workflows land as part of Epic 2 — CI/CD Pipeline)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
