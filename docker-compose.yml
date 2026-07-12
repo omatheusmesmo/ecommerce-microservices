@@ -523,7 +523,7 @@ services:
       QUARKUS_HTTP_PORT: 8080
       QUARKUS_HTTP_HOST: 0.0.0.0
     volumes:
-      - ./publicKey.pem:/work/publicKey.pem
+      - ./publicKey.pem:/work/publicKey.pem:ro
     networks:
       - ecommerce-network
     depends_on:
@@ -620,8 +620,8 @@ services:
       QUARKUS_HTTP_PORT: 8080
       QUARKUS_HTTP_HOST: 0.0.0.0
     volumes:
-      - ./privateKey.pem:/work/privateKey.pem
-      - ./publicKey.pem:/work/publicKey.pem
+      - ./privateKey.pem:/work/privateKey.pem:ro
+      - ./publicKey.pem:/work/publicKey.pem:ro
     networks:
       - ecommerce-network
     depends_on:
