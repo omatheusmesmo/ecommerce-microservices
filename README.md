@@ -1,6 +1,6 @@
 # E-Commerce Microservices
 
-A scalable, cloud-native e-commerce backend built with **Java 21** and **Quarkus**, featuring a microservices architecture managed by **Consul** for service discovery and **Kafka** for event-driven communication.
+A scalable, cloud-native e-commerce backend built with **Java 25** and **Quarkus**, featuring a microservices architecture with **Kafka** for event-driven communication.
 
 ## 🏗 Architecture Overview
 
@@ -46,8 +46,9 @@ The system is composed of loose-coupled microservices that communicate synchrono
 - **authentication-email** - User registration and password recovery events
 
 ### Resilience & Fault Tolerance ✅
-- **Dead Letter Queue (DLQ)**: Failed events are sent to `outbox.event.Order.dlq` after 3 retry attempts
-- **Exponential Backoff Retry**: Progressive delays (2s → 4s → 8s) for transient failures
+- **Dead Letter Queue (DLQ)**: Order and authentication-email events that fail to process are routed to a per-consumer DLQ topic instead of being dropped or retried indefinitely
+- **Idempotent Consumers**: Order event consumers dedupe on `(topic, partition, offset)`, so Kafka redeliveries after a failed/retried message don't cause duplicate side effects
+- **Timeouts & Circuit Breakers**: Discord and Brevo HTTP clients are bounded by `@Timeout`/`@CircuitBreaker`, so a hung downstream call can't tie up the notification service's shared worker pool
 - **Enhanced Observability**: DEBUG-level logs for `com.ecommerce.*` in development, INFO in production
 - **Native Image Reflection**: All DTOs properly configured for GraalVM native compilation
 - **Zero Data Loss**: Events preserved in DLQ for manual investigation and reprocessing
@@ -56,7 +57,7 @@ The system is composed of loose-coupled microservices that communicate synchrono
 
 ### Prerequisites
 
-- **Java 21+** (JDK)
+- **Java 25+** (JDK)
 - **Maven 3.8+**
 - **Docker** & **Docker Compose**
 - **OpenSSL** (for generating JWT security keys)
@@ -87,10 +88,10 @@ The system is composed of loose-coupled microservices that communicate synchrono
    curl http://localhost:8081/q/health  # Order Service
    curl http://localhost:8082/q/health  # Product Service
    curl http://localhost:8083/q/health  # Notification Service
-   
+
    # Check Kafka Connect
    curl http://localhost:8084/
-   
+
    # Check Debezium connector status
    curl http://localhost:8084/connectors/order-service-outbox-connector/status
    ```
@@ -224,15 +225,17 @@ Kafka Topic: Order.events
 
 | Topic | Producer | Consumers | Event Types | Resilience |
 |-------|----------|-----------|-------------|------------|
-| **outbox.event.Order** | Debezium (from outbox) | Notification, Product | OrderCreated, OrderStatusChanged | 3 retries with exponential backoff |
-| **outbox.event.Order.dlq** | Notification Service | DeadLetterQueueConsumer | Failed events after retries | Manual investigation |
+| **outbox.event.Order** | Debezium (from outbox) | Notification, Product | OrderCreated, OrderStatusChanged | Idempotent consumer + DLQ on failure |
+| **outbox.event.Order.dlq** | Notification Service | DeadLetterQueueConsumer | Failed events | Manual investigation |
+| **outbox.event.Order.product-service.dlq** | Product Service | OrderEventDeadLetterConsumer | Failed events | Manual investigation |
 | **product-created** | Product Service | Notification | ProductCreatedEvent | Default |
 | **product-updated** | Product Service | - | ProductUpdatedEvent | Default |
 | **product-deleted** | Product Service | - | ProductDeletedEvent | Default |
 | **stock-changed** | Product Service | Notification | StockChangedEvent | Default |
-| **authentication-email** | Auth Service | Notification | User registration, password recovery | Default |
+| **authentication-email** | Auth Service | Notification | Account activation/reset links, activation/reset confirmations | DLQ on failure |
+| **authentication-email.dlq** | Notification Service | DeadLetterQueueConsumer | Failed events | Manual investigation |
 
-**Note on outbox.event.Order topic**: 
+**Note on outbox.event.Order topic**:
 - Topic prefix: `outbox` (required by Debezium)
 - Database server name: `outbox` (used in topic construction)
 - Aggregate type: `Order` (from outbox table)
@@ -241,8 +244,8 @@ Kafka Topic: Order.events
 - Consumers automatically handle double-encoded JSON from Debezium
 
 **Resilience Strategy**:
-- **Retry Policy**: Notification Service retries failed events 3 times with exponential backoff (2s, 4s, 8s)
-- **Dead Letter Queue (DLQ)**: Events that fail after all retries are sent to `outbox.event.Order.dlq` for investigation
+- **Idempotent Consumers**: Order event consumers record `(topic, partition, offset)` as processed after a successful run, so a message redelivered by Kafka (e.g. after a transient failure) doesn't get processed twice
+- **Dead Letter Queue (DLQ)**: Events that fail to process are routed to a per-service DLQ topic for investigation
 - **No Data Loss**: Events are preserved in DLQ for manual reprocessing or troubleshooting
 
 ### Direct Publishing (Product Service)
@@ -252,7 +255,7 @@ The Product Service still uses direct Kafka publishing for its events. Future im
 ## 🛠 Tech Stack
 
 - **Framework:** Quarkus (Super-fast Subatomic Java)
-- **Language:** Java 21
+- **Language:** Java 25
 - **Databases:** PostgreSQL (with logical replication), MongoDB
 - **Caching:** Redis
 - **Messaging:** Apache Kafka
@@ -300,4 +303,4 @@ Access Jaeger UI: http://localhost:16686
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0) - see the LICENSE file for details. Noncommercial use (personal, educational, research) is permitted; commercial use requires a separate license from the author.
