@@ -32,40 +32,45 @@ public class OrderEventConsumer {
     @Blocking
     public Uni<Void> onOrderEvent(Message<String> kafkaMessage) {
         String message = kafkaMessage.getPayload();
+        LOG.debugf("[KAFKA] Received message from Order.events: %s", message);
+
+        String eventKey = eventKeyOf(kafkaMessage);
+        if (isAlreadyProcessed(eventKey)) {
+            LOG.infof("[KAFKA] Skipping already-processed event: %s", eventKey);
+            return Uni.createFrom().completionStage(kafkaMessage.ack());
+        }
+
+        JsonNode jsonNode;
         try {
-            LOG.debugf("[KAFKA] Received message from Order.events: %s", message);
-
-            String eventKey = eventKeyOf(kafkaMessage);
-            if (isAlreadyProcessed(eventKey)) {
-                LOG.infof("[KAFKA] Skipping already-processed event: %s", eventKey);
-                return Uni.createFrom().voidItem();
-            }
-
-            JsonNode jsonNode = objectMapper.readTree(message);
-
+            jsonNode = objectMapper.readTree(message);
             if (jsonNode.isTextual()) {
-                String innerJson = jsonNode.asText();
-                jsonNode = objectMapper.readTree(innerJson);
+                jsonNode = objectMapper.readTree(jsonNode.asText());
                 LOG.debugf("[KAFKA] Detected double-encoded JSON, parsed inner content");
             }
-
-            if (jsonNode.has("items") && jsonNode.has("customerName")) {
-                if (jsonNode.has("cancelledAt")) {
-                    OrderCancelledEvent event = objectMapper.treeToValue(jsonNode, OrderCancelledEvent.class);
-                    handleOrderCancelled(event);
-                }else {
-                    OrderCreatedEvent event = objectMapper.treeToValue(jsonNode, OrderCreatedEvent.class);
-                    handleOrderCreated(event);
-                }
-            } else {
-                LOG.debugf("[KAFKA] Ignoring non-OrderCreated event from Order.events");
-            }
-
-            markProcessed(eventKey);
         } catch (Exception e) {
-            LOG.errorf(e, "[KAFKA] Failed to process Order.events message: %s", message);
+            LOG.errorf(e, "[KAFKA] Failed to parse Order.events message: %s", message);
+            return Uni.createFrom().completionStage(
+                    kafkaMessage.nack(new IllegalArgumentException("Failed to parse Order.events message: " + message, e)));
         }
-        return Uni.createFrom().voidItem();
+
+        if (jsonNode.has("items") && jsonNode.has("customerName")) {
+            try {
+                if (jsonNode.has("cancelledAt")) {
+                    handleOrderCancelled(objectMapper.treeToValue(jsonNode, OrderCancelledEvent.class));
+                } else {
+                    handleOrderCreated(objectMapper.treeToValue(jsonNode, OrderCreatedEvent.class));
+                }
+            } catch (Exception e) {
+                LOG.errorf(e, "[KAFKA] Failed to process Order.events message: %s", message);
+                return Uni.createFrom().completionStage(
+                        kafkaMessage.nack(new IllegalStateException("Failed to process Order.events message: " + message, e)));
+            }
+        } else {
+            LOG.debugf("[KAFKA] Ignoring non-OrderCreated event from Order.events");
+        }
+
+        markProcessed(eventKey);
+        return Uni.createFrom().completionStage(kafkaMessage.ack());
     }
 
     private String eventKeyOf(Message<String> kafkaMessage) {
