@@ -178,18 +178,18 @@ services:
       - |
         # Install required tools
         apk add --no-cache curl gettext jq
-        
+
         echo '⏳ Waiting for Kafka Connect to be ready...'
         until curl -s http://kafka-connect:8083/connectors > /dev/null 2>&1; do
           echo 'Kafka Connect not ready, retrying in 5s...'
           sleep 5
         done
         echo '✅ Kafka Connect is ready!'
-        
+
         echo '🔧 Preparing connector configuration with environment variables...'
         # Use envsubst ONLY for specific variables (preserve ${routedByValue} for Debezium)
         envsubst '$$POSTGRES_HOSTNAME $$POSTGRES_PORT $$POSTGRES_USER $$POSTGRES_PASSWORD $$POSTGRES_DB' < /config/connector-template.json > /tmp/connector.json
-        
+
         echo '📋 Checking if connector exists and deleting if found...'
         EXISTING=$$(curl -s http://kafka-connect:8083/connectors)
         if echo "$$EXISTING" | grep -q 'order-service-outbox-connector'; then
@@ -197,30 +197,30 @@ services:
           curl -s -X DELETE http://kafka-connect:8083/connectors/order-service-outbox-connector
           sleep 3
         fi
-        
+
         echo '🔧 Registering Debezium outbox connector...'
         echo ''
-        
+
         # Register connector
         HTTP_CODE=$$(curl -s -o /tmp/response.json -w "%{http_code}" -X POST http://kafka-connect:8083/connectors \
           -H "Content-Type: application/json" \
           -d @/tmp/connector.json)
-        
+
         echo "HTTP Status: [$$HTTP_CODE]"
         echo "Response:"
         cat /tmp/response.json | jq '.' 2>/dev/null || cat /tmp/response.json
         echo ''
-        
+
         if [ "$$HTTP_CODE" != "201" ]; then
           echo "❌ Failed to register connector (HTTP $$HTTP_CODE)"
           exit 1
         fi
-        
+
         echo "✅ Connector registered successfully!"
-        
+
         # Clean up
         rm -f /tmp/connector.json /tmp/response.json
-        
+
         echo ''
         echo '📊 Connector status:'
         sleep 2
@@ -471,10 +471,13 @@ services:
       QUARKUS_DATASOURCE_USERNAME: ${ORDER_SERVICE_DB_USER}
       QUARKUS_DATASOURCE_PASSWORD: ${ORDER_SERVICE_DB_PASSWORD}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      JWT_PUBLIC_KEY_LOCATION: /work/publicKey.pem
       QUARKUS_LOG_CONSOLE_JSON: ${LOG_JSON_ENABLED}
       QUARKUS_LOG_LEVEL: ${LOG_LEVEL}
       QUARKUS_HTTP_PORT: 8080
       QUARKUS_HTTP_HOST: 0.0.0.0
+    volumes:
+      - ./publicKey.pem:/work/publicKey.pem:ro
     networks:
       - ecommerce-network
     depends_on:
