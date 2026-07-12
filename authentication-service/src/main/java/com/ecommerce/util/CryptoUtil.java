@@ -3,6 +3,7 @@ package com.ecommerce.util;
 import com.ecommerce.exception.CryptoException;
 import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
 import org.bouncycastle.crypto.params.Argon2Parameters;
+import org.eclipse.microprofile.config.ConfigProvider;
 import javax.crypto.spec.GCMParameterSpec;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -14,7 +15,7 @@ import java.util.Base64;
 
 public class CryptoUtil {
 
-    private static final String AES_KEY = System.getenv().getOrDefault("AES_ENCRYPTION_KEY", "30e921e913bc06d7b9e2493fef4a93ac");
+    private static final String AES_KEY = ConfigProvider.getConfig().getValue("app.encryption.key", String.class);
 
     public static String encrypt(String data) {
         try {
