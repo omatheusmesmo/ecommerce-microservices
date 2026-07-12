@@ -5,6 +5,8 @@ import com.ecommerce.dto.OrderResponse;
 import com.ecommerce. dto.UpdateOrderStatusRequest;
 import com.ecommerce.entity.OrderStatus;
 import com. ecommerce.service.OrderService;
+import io.quarkus.security.Authenticated;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject. Inject;
 import jakarta.validation. Valid;
 import jakarta.ws. rs.*;
@@ -25,6 +27,7 @@ public class OrderResource {
     OrderService orderService;
 
     @POST
+    @RolesAllowed({"CUSTOMER", "ADMIN"})
     public Response createOrder(@Valid CreateOrderRequest request) {
         LOG.infof("POST /orders - Creating order for: %s", request.customerName());
 
@@ -37,6 +40,7 @@ public class OrderResource {
     }
 
     @GET
+    @RolesAllowed("ADMIN")
     public List<OrderResponse> findAll() {
         LOG.info("GET /orders - Listing all orders");
         return orderService. findAll();
@@ -44,6 +48,7 @@ public class OrderResource {
 
     @GET
     @Path("/{id}")
+    @Authenticated
     public OrderResponse findById(@PathParam("id") Long id) {
         LOG.infof("GET /orders/%d", id);
         return orderService.findById(id);
@@ -51,6 +56,7 @@ public class OrderResource {
 
     @GET
     @Path("/status/{status}")
+    @RolesAllowed("ADMIN")
     public List<OrderResponse> findByStatus(@PathParam("status") OrderStatus status) {
         LOG.infof("GET /orders/status/%s", status);
         return orderService.findByStatus(status);
@@ -58,6 +64,7 @@ public class OrderResource {
 
     @GET
     @Path("/customer/{email}")
+    @RolesAllowed("ADMIN")
     public List<OrderResponse> findByCustomerEmail(@PathParam("email") String email) {
         LOG.infof("GET /orders/customer/%s", email);
         return orderService.findByCustomerEmail(email);
@@ -65,6 +72,7 @@ public class OrderResource {
 
     @PUT
     @Path("/{id}/status")
+    @RolesAllowed("ADMIN")
     public OrderResponse updateStatus(
             @PathParam("id") Long id,
             @Valid UpdateOrderStatusRequest request
@@ -75,6 +83,7 @@ public class OrderResource {
 
     @PATCH
     @Path("/{id}/cancel")
+    @RolesAllowed({"CUSTOMER", "ADMIN"})
     public OrderResponse cancelOrder(@PathParam("id") Long id) {
         LOG.infof("PATCH /orders/%d/cancel - Cancelling order", id);
 
