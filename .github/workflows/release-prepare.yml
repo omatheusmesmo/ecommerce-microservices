@@ -28,7 +28,7 @@ jobs:
     outputs:
       release_version: ${{ steps.version.outputs.release_version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
