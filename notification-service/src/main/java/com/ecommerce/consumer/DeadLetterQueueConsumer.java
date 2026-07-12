@@ -26,4 +26,12 @@ public class DeadLetterQueueConsumer {
         // For now, just log for visibility
         LOG.warnf("Event preserved in DLQ topic for reprocessing: outbox.event.Order.dlq");
     }
+
+    @Incoming("authentication-email-dlq")
+    @Blocking
+    public void onAuthenticationEmailDeadLetterMessage(String message) {
+        LOG.errorf("⚠️ CRITICAL: Authentication email event sent to DLQ - Manual investigation required!");
+        LOG.errorf("DLQ Event Payload: %s", message);
+        LOG.warnf("Event preserved in DLQ topic for reprocessing: authentication-email.dlq");
+    }
 }

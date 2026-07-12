@@ -59,16 +59,20 @@ public class DiscordNotificationProvider extends AbstractNotificationProvider{
             case PRODUCT_CREATED -> "✨";
             case STOCK_LOW_ALERT -> "⚠️";
             case STOCK_OUT_ALERT -> "🚨";
+            case ACCOUNT_ACTIVATION_LINK, ACCOUNT_ACTIVATED,
+                 PASSWORD_RESET_LINK, PASSWORD_RESET_CONFIRMED -> "🔐";
         };
     }
 
     private String getColorForType(NotificationType type) {
         return switch (type) {
-            case ORDER_CREATED, ORDER_DELIVERED, STOCK_RESTOCKED -> "green";
+            case ORDER_CREATED, ORDER_DELIVERED, STOCK_RESTOCKED,
+                 ACCOUNT_ACTIVATED, PASSWORD_RESET_CONFIRMED -> "green";
             case ORDER_CANCELLED, STOCK_OUT_ALERT -> "red";
             case ORDER_STATUS_CHANGED -> "blue";
             case STOCK_LOW_ALERT -> "orange";
             case PRODUCT_CREATED -> "purple";
+            case ACCOUNT_ACTIVATION_LINK, PASSWORD_RESET_LINK -> "gold";
         };
     }
 

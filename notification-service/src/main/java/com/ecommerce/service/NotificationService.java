@@ -1,6 +1,7 @@
 package com.ecommerce.service;
 
 import com.ecommerce.dto.NotificationRequest;
+import com.ecommerce.enums.ActionType;
 import com.ecommerce.enums.NotificationChannel;
 import com.ecommerce.enums.NotificationType;
 import com.ecommerce.enums.OrderStatus;
@@ -129,6 +130,34 @@ public class NotificationService {
                 NotificationChannel.DISCORD,
                 NotificationChannel.EMAIL
         ));
+    }
+
+    public void notifyAuthenticationLink(Long userId, String email, ActionType actionType, String url) {
+        NotificationType type = actionType == ActionType.ACTIVATE
+                ? NotificationType.ACCOUNT_ACTIVATION_LINK
+                : NotificationType.PASSWORD_RESET_LINK;
+        String subject = actionType == ActionType.ACTIVATE ? "Activate your account" : "Reset your password";
+        String message = actionType == ActionType.ACTIVATE
+                ? "Click the link to activate your account: " + url
+                : "Click the link to reset your password: " + url;
+
+        Map<String, Object> data = Map.of("userId", userId, "url", url);
+
+        send(new NotificationRequest(type, NotificationChannel.EMAIL, email, subject, message, data));
+    }
+
+    public void notifyAuthenticationConfirmation(Long userId, String email, ActionType actionType) {
+        NotificationType type = actionType == ActionType.ACTIVATE
+                ? NotificationType.ACCOUNT_ACTIVATED
+                : NotificationType.PASSWORD_RESET_CONFIRMED;
+        String subject = actionType == ActionType.ACTIVATE ? "Account activated" : "Password reset confirmed";
+        String message = actionType == ActionType.ACTIVATE
+                ? "Your account has been activated successfully."
+                : "Your password has been reset successfully.";
+
+        Map<String, Object> data = Map.of("userId", userId);
+
+        send(new NotificationRequest(type, NotificationChannel.EMAIL, email, subject, message, data));
     }
 
     public void notifyProductCreated(String productId, String productName, BigDecimal price) {
