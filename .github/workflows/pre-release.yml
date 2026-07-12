@@ -1,0 +1,46 @@
+name: Pre Release
+
+on:
+  pull_request:
+    paths:
+      - '.github/project.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  pre-release:
+    name: Pre Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if PR is from a fork
+        if: github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          echo '::error::Pre-release cannot be triggered from a fork.'
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - name: Install yq
+        run: sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && sudo chmod +x /usr/local/bin/yq
+
+      - name: Validate version
+        id: metadata
+        run: |
+          CURRENT_VERSION=$(yq '.release.current-version' .github/project.yml)
+          echo "current_version=${CURRENT_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Check for SNAPSHOT version
+        if: contains(steps.metadata.outputs.current_version, 'SNAPSHOT')
+        run: |
+          echo '::error::Cannot release a SNAPSHOT version.'
+          exit 1

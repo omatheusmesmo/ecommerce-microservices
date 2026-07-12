@@ -1,0 +1,128 @@
+name: Perform Release
+
+run-name: Perform ${{ github.event.inputs.tag || github.ref_name }} Release
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. 1.2.0)'
+        required: true
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  perform-release:
+    name: Perform Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Extract version
+        id: version
+        run: |
+          TAG=${{ github.event.inputs.tag || github.ref_name }}
+          echo "version=${TAG}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog from merged PRs
+        id: changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | head -2 | tail -1)
+          if [ "${PREVIOUS_TAG}" = "${{ steps.version.outputs.tag }}" ]; then
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD | head -1)
+          fi
+
+          SINCE_DATE=$(git log -1 --format=%aI "${PREVIOUS_TAG}" 2>/dev/null || echo "2000-01-01T00:00:00Z")
+
+          CHANGELOG=""
+          PAGE=1
+          while true; do
+            RESPONSE=$(gh api "repos/${{ github.repository }}/pulls" \
+              --method GET \
+              -f state=closed \
+              -f sort=updated \
+              -f direction=desc \
+              -f per_page=100 \
+              -f page=${PAGE} \
+              --jq '.[] | select(.merged_at != null and (.merged_at > "'${SINCE_DATE}'")) | "- \(.title) (#\(.number)) @\(.user.login)"')
+            if [ -z "${RESPONSE}" ]; then
+              break
+            fi
+            CHANGELOG="${CHANGELOG}${RESPONSE}"$'\n'
+            PAGE=$((PAGE + 1))
+          done
+
+          if [ -z "${CHANGELOG}" ]; then
+            CHANGELOG="- Initial release"
+          fi
+
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "${CHANGELOG}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Package JVM artifacts for each service
+        run: |
+          for service in authentication-service product-service order-service notification-service; do
+            echo "::group::Packaging ${service}"
+            (cd "$service" && mvn -B clean package -Dquarkus.package.type=fast-jar -DskipTests -ntp)
+            echo "::endgroup::"
+          done
+
+      - name: Upload service artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecommerce-microservices-${{ steps.version.outputs.version }}
+          path: |
+            authentication-service/target/quarkus-app/
+            product-service/target/quarkus-app/
+            order-service/target/quarkus-app/
+            notification-service/target/quarkus-app/
+          retention-days: 30
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
+          body: |
+            ## What's Changed
+
+            ${{ steps.changelog.outputs.changelog }}
+
+            ## Artifacts
+
+            - **JVM**: download `ecommerce-microservices-${{ steps.version.outputs.version }}`, each service folder runs with `java -jar quarkus-run.jar`
+            - **Docker**: build from source with `docker compose up --build`
+
+            > _Draft release - edit and publish when ready._
+          draft: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

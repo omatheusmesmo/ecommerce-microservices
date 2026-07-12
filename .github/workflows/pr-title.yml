@@ -1,0 +1,46 @@
+name: PR Title
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check-title:
+    name: Check Title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject conventional-commit prefixes
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          echo "PR title: ${PR_TITLE}"
+          if [[ "${PR_AUTHOR}" == "dependabot[bot]" ]]; then
+            echo "Skipping title check for Dependabot PR."
+            exit 0
+          fi
+          if grep -qiE '^[[:space:]]*(feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert)(\([^)]*\))?!?:' <<< "${PR_TITLE}"; then
+            {
+              echo "::error::PR titles must read as a release-notes line, not a conventional commit."
+              echo "The changelog is generated from PR titles, so drop the 'type:' prefix."
+              echo "Use an imperative, capitalized phrase:"
+              echo "  Bad:  feat: add address entity to orders"
+              echo "  Good: Add Address entity to orders"
+            } >&2
+            exit 1
+          fi
+          echo "Title OK."
