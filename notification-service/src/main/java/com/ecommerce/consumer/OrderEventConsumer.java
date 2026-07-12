@@ -25,67 +25,78 @@ public class OrderEventConsumer {
     @Incoming("order-events")
     @Blocking
     public void onOrderEvent(String message) {
+        LOG.debugf("[KAFKA] Received raw message from outbox.event.Order: %s", message);
+
+        JsonNode jsonNode;
         try {
-            LOG.debugf("[KAFKA] Received raw message from outbox.event.Order: %s", message);
-
-            JsonNode jsonNode = objectMapper.readTree(message);
-
+            jsonNode = objectMapper.readTree(message);
             if (jsonNode.isTextual()) {
-                String innerJson = jsonNode.asText();
-                jsonNode = objectMapper.readTree(innerJson);
+                jsonNode = objectMapper.readTree(jsonNode.asText());
                 LOG.debugf("[KAFKA] Detected double-encoded JSON, parsed inner content");
             }
-
-            if (jsonNode.has("oldStatus") && jsonNode.has("newStatus")) {
-                OrderStatusChangedEvent event = objectMapper.treeToValue(jsonNode, OrderStatusChangedEvent.class);
-                LOG.infof("[KAFKA] Successfully parsed OrderStatusChangedEvent: orderId=%d", event.orderId());
-                handleOrderStatusChanged(event);
-            } else if (jsonNode.has("items") && jsonNode.has("customerName")) {
-                OrderCreatedEvent event = objectMapper.treeToValue(jsonNode, OrderCreatedEvent.class);
-                LOG.infof("[KAFKA] Successfully parsed OrderCreatedEvent: orderId=%d", event.orderId());
-                handleOrderCreated(event);
-            } else {
-                LOG.warnf("[KAFKA] Unknown event type in outbox.event.Order - payload: %s", message);
-            }
-
         } catch (Exception e) {
-            LOG.errorf(e, "[KAFKA] Failed to process outbox.event.Order message: %s - error: %s", message, e.getMessage());
+            LOG.errorf(e, "[KAFKA] Failed to parse outbox.event.Order message: %s", message);
+            throw new IllegalArgumentException("Failed to parse outbox.event.Order message: " + message, e);
+        }
+
+        if (jsonNode.has("oldStatus") && jsonNode.has("newStatus")) {
+            OrderStatusChangedEvent event = parseOrThrow(jsonNode, OrderStatusChangedEvent.class, message);
+            LOG.infof("[KAFKA] Successfully parsed OrderStatusChangedEvent: orderId=%d", event.orderId());
+            handleOrderStatusChanged(event);
+        } else if (jsonNode.has("items") && jsonNode.has("customerName")) {
+            OrderCreatedEvent event = parseOrThrow(jsonNode, OrderCreatedEvent.class, message);
+            LOG.infof("[KAFKA] Successfully parsed OrderCreatedEvent: orderId=%d", event.orderId());
+            handleOrderCreated(event);
+        } else {
+            LOG.warnf("[KAFKA] Unknown event type in outbox.event.Order - payload: %s", message);
+            throw new IllegalArgumentException("Unknown event type in outbox.event.Order - payload: " + message);
+        }
+    }
+
+    private <T> T parseOrThrow(JsonNode jsonNode, Class<T> type, String message) {
+        try {
+            return objectMapper.treeToValue(jsonNode, type);
+        } catch (Exception e) {
+            LOG.errorf(e, "[KAFKA] Failed to map outbox.event.Order message to %s: %s", type.getSimpleName(), message);
+            throw new IllegalArgumentException("Failed to map outbox.event.Order message to " + type.getSimpleName() + ": " + message, e);
         }
     }
 
     private void handleOrderCreated(OrderCreatedEvent event) {
-        try {
-            LOG.infof("[KAFKA] Processing OrderCreated event: orderId=%d, customer=%s, total=R$%.2f",
-                    event.orderId(), event.customerName(), event.totalAmount());
+        LOG.infof("[KAFKA] Processing OrderCreated event: orderId=%d, customer=%s, total=R$%.2f",
+                event.orderId(), event.customerName(), event.totalAmount());
 
+        try {
             notificationService.notifyOrderCreated(
                     event.orderId(),
                     event.customerEmail(),
                     event.customerName(),
                     event.totalAmount()
             );
-
-            LOG.infof("[KAFKA] OrderCreated event processed successfully: orderId=%d", event.orderId());
         } catch (Exception e) {
             LOG.errorf(e, "[KAFKA] Failed to process OrderCreated event: orderId=%d", event.orderId());
+            throw e;
         }
+
+        LOG.infof("[KAFKA] OrderCreated event processed successfully: orderId=%d", event.orderId());
     }
 
     private void handleOrderStatusChanged(OrderStatusChangedEvent event) {
-        try {
-            LOG.infof("[KAFKA] Processing OrderStatusChanged event: orderId=%d, %s → %s",
-                    event.orderId(), event.oldStatus(), event.newStatus());
+        LOG.infof("[KAFKA] Processing OrderStatusChanged event: orderId=%d, %s → %s",
+                event.orderId(), event.oldStatus(), event.newStatus());
 
+        try {
             notificationService.notifyOrderStatusChanged(
                     event.orderId(),
                     event.customerEmail(),
                     event.oldStatus(),
                     event.newStatus()
             );
-
-            LOG.infof("[KAFKA] OrderStatusChanged event processed successfully: orderId=%d", event.orderId());
         } catch (Exception e) {
             LOG.errorf(e, "[KAFKA] Failed to process OrderStatusChanged event: orderId=%d", event.orderId());
+            throw e;
         }
+
+        LOG.infof("[KAFKA] OrderStatusChanged event processed successfully: orderId=%d", event.orderId());
     }
 }
