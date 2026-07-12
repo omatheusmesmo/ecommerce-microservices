@@ -96,7 +96,7 @@ jobs:
           done
 
       - name: Upload service artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ecommerce-microservices-${{ steps.version.outputs.version }}
           path: |
