@@ -77,9 +77,9 @@ jobs:
 
       - name: Update project.yml
         run: |
+          # next-version is always the 999-SNAPSHOT dev sentinel, so only
+          # current-version needs resetting back to it after a release.
           yq -i ".release.current-version = \"${{ steps.version.outputs.next_version }}\"" .github/project.yml
-          NEXT_SNAPSHOT=$(echo "${{ steps.version.outputs.next_version }}" | sed 's/-SNAPSHOT//')
-          yq -i ".release.next-version = \"${NEXT_SNAPSHOT}-SNAPSHOT\"" .github/project.yml
 
       - name: Commit and push SNAPSHOT
         run: |
