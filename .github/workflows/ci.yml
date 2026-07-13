@@ -7,17 +7,17 @@ on:
     branches: [main]
 
 jobs:
+  detect-modules:
+    uses: ./.github/workflows/detect-modules.yml
+
   test:
     name: Build & test (${{ matrix.service }})
+    needs: detect-modules
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        service:
-          - authentication-service
-          - product-service
-          - order-service
-          - notification-service
+        service: ${{ fromJson(needs.detect-modules.outputs.modules) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7

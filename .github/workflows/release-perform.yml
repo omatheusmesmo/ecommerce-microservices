@@ -16,6 +16,7 @@ permissions:
   contents: write
   issues: write
   pull-requests: read
+  packages: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,21 +27,21 @@ defaults:
     shell: bash
 
 jobs:
-  perform-release:
-    name: Perform Release
+  detect-modules:
+    uses: ./.github/workflows/detect-modules.yml
+
+  metadata:
+    name: Release Metadata
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.tag || github.ref_name }}
           fetch-depth: 0
-
-      - name: Set up JDK 25
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "25"
-          cache: maven
 
       - name: Extract version
         id: version
@@ -87,39 +88,120 @@ jobs:
           echo "${CHANGELOG}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Package JVM artifacts for each service
-        run: |
-          for service in authentication-service product-service order-service notification-service; do
-            echo "::group::Packaging ${service}"
-            (cd "$service" && mvn -B clean package -Dquarkus.package.type=fast-jar -DskipTests -ntp)
-            echo "::endgroup::"
-          done
+  release-jvm:
+    name: Release JVM image (${{ matrix.service }})
+    needs: [detect-modules, metadata]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-modules.outputs.modules) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.metadata.outputs.tag }}
 
-      - name: Upload service artifacts
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+          cache-dependency-path: ${{ matrix.service }}/pom.xml
+
+      - name: Package (fast-jar)
+        working-directory: ${{ matrix.service }}
+        run: mvn -B clean package -Dquarkus.package.type=fast-jar -DskipTests -ntp
+
+      - name: Upload service artifact
         uses: actions/upload-artifact@v7
         with:
-          name: ecommerce-microservices-${{ steps.version.outputs.version }}
-          path: |
-            authentication-service/target/quarkus-app/
-            product-service/target/quarkus-app/
-            order-service/target/quarkus-app/
-            notification-service/target/quarkus-app/
+          name: ecommerce-microservices-${{ needs.metadata.outputs.version }}-${{ matrix.service }}
+          path: ${{ matrix.service }}/target/quarkus-app/
           retention-days: 30
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push image
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.service }}
+          file: ${{ matrix.service }}/src/main/docker/Dockerfile.jvm
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}:${{ needs.metadata.outputs.version }}-jvm
+
+  release-native:
+    name: Release native image (${{ matrix.service }})
+    needs: [detect-modules, metadata]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-modules.outputs.modules) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.metadata.outputs.tag }}
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+          cache-dependency-path: ${{ matrix.service }}/pom.xml
+
+      - name: Build native executable (container build)
+        working-directory: ${{ matrix.service }}
+        run: mvn -B clean package -Dnative -Dquarkus.native.container-build=true -DskipTests -ntp
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push image
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.service }}
+          file: ${{ matrix.service }}/src/main/docker/Dockerfile.native-micro
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}:${{ needs.metadata.outputs.version }}-native
+
+  create-release:
+    name: Create GitHub Release
+    needs: [metadata, release-jvm, release-native]
+    runs-on: ubuntu-latest
+    steps:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: Release ${{ steps.version.outputs.tag }}
+          tag_name: ${{ needs.metadata.outputs.tag }}
+          name: Release ${{ needs.metadata.outputs.tag }}
           body: |
             ## What's Changed
 
-            ${{ steps.changelog.outputs.changelog }}
+            ${{ needs.metadata.outputs.changelog }}
 
             ## Artifacts
 
-            - **JVM**: download `ecommerce-microservices-${{ steps.version.outputs.version }}`, each service folder runs with `java -jar quarkus-run.jar`
-            - **Docker**: build from source with `docker compose up --build`
+            - **JVM**: download the `ecommerce-microservices-${{ needs.metadata.outputs.version }}-<service>` artifact for the service you need, runs with `java -jar quarkus-run.jar`
+            - **Docker**: `docker pull ghcr.io/${{ github.repository_owner }}/<service>:${{ needs.metadata.outputs.version }}-jvm` (or `-native`), or build from source with `docker compose up --build`
 
             > _Draft release - edit and publish when ready._
           draft: true

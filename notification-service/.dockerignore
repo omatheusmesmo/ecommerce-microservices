@@ -1,69 +1,9 @@
-# ========================================
-# IGNORE BUILD ARTIFACTS
-# ========================================
-target/
+*
 !target/*-runner
-
-# ========================================
-# IGNORE IDE FILES
-# ========================================
-.idea/
-.vscode/
-. eclipse/
-*.iml
-*.ipr
-*.iws
-*. swp
-*.swo
-*~
-
-# ========================================
-# IGNORE OS FILES
-# ========================================
-. DS_Store
-Thumbs. db
-desktop.ini
-
-# ========================================
-# IGNORE VERSION CONTROL
-# ========================================
-.git/
-.gitignore
-. gitattributes
-
-# ========================================
-# IGNORE LOGS
-# ========================================
-*.log
-logs/
-
-# ========================================
-# IGNORE ENVIRONMENT FILES (SECURITY!)
-# ========================================
-.env
-.env.local
-.env.*.local
-*. key
-*.pem
-*.p12
-
-# ========================================
-# IGNORE TEMP FILES
-# ========================================
-*.tmp
-*.bak
-*.swp
-. cache/
-
-# ========================================
-# IGNORE DOCKER FILES (não precisa no build)
-# ========================================
-Dockerfile*
-. dockerignore
-
-# ========================================
-# IGNORE DOCS
-# ========================================
-README.md
-docs/
-*. md
+!target/*-runner.jar
+!target/lib/*
+!target/quarkus-app/*
+!mvnw*
+!.mvn/
+!pom.xml
+!src/

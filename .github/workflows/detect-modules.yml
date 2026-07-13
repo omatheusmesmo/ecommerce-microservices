@@ -1,0 +1,25 @@
+name: Detect Modules
+
+on:
+  workflow_call:
+    outputs:
+      modules:
+        description: JSON array of service directory names, read from the root pom.xml <modules>
+        value: ${{ jobs.detect.outputs.modules }}
+
+jobs:
+  detect:
+    name: Detect Modules
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.modules.outputs.modules }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Extract modules from pom.xml
+        id: modules
+        run: |
+          MODULES=$(grep -oPm100 '(?<=<module>).*?(?=</module>)' pom.xml | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "modules=${MODULES}" >> "$GITHUB_OUTPUT"
+          echo "Detected modules: ${MODULES}"
