@@ -37,7 +37,7 @@ jobs:
         run: mvn -B dependency:resolve -ntp
 
       - name: Generate SBOM (CycloneDX)
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -52,7 +52,7 @@ jobs:
           retention-days: 90
 
       - name: Vulnerability scan (fail on high/critical)
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -63,7 +63,7 @@ jobs:
 
       - name: Vulnerability scan (SARIF for Security tab)
         if: always()
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
