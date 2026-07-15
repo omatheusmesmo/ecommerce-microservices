@@ -12,11 +12,25 @@ import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
+
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.function.Predicate;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 class AccountLifecycleIntegrationTest {
@@ -37,6 +51,10 @@ class AccountLifecycleIntegrationTest {
         String password = "Passw0rd!23";
 
         register(ip, email, password, "Lifecycle User").statusCode(201).body("active", is(false));
+
+        Optional<String> activationMessage = waitForKafkaMessage("authentication-email",
+                value -> value.contains(email) && value.contains("\"actionType\":\"ACTIVATE\""), 10);
+        assertTrue(activationMessage.isPresent(), "expected the activation event to reach Kafka");
 
         login(ip, email, password).statusCode(401);
 
@@ -70,6 +88,10 @@ class AccountLifecycleIntegrationTest {
                 .body("{\"email\":\"" + email + "\"}")
                 .when().post("/auth/request-password-reset")
                 .then().statusCode(200);
+
+        Optional<String> resetMessage = waitForKafkaMessage("authentication-email",
+                value -> value.contains(email) && value.contains("\"actionType\":\"RESET\""), 10);
+        assertTrue(resetMessage.isPresent(), "expected the password-reset event to reach Kafka");
 
         String resetToken = rawTokenFor(email, ActionType.RESET);
 
@@ -174,5 +196,28 @@ class AccountLifecycleIntegrationTest {
                 .find("userId = ?1 and actionType = ?2", user.id, actionType)
                 .firstResult();
         return userActionTokenService.getRawToken(token);
+    }
+
+    private Optional<String> waitForKafkaMessage(String topic, Predicate<String> predicate, int timeoutSeconds) {
+        long deadline = System.currentTimeMillis() + timeoutSeconds * 1000L;
+        Properties props = new Properties();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "test-group-" + UUID.randomUUID());
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+
+        try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props)) {
+            consumer.subscribe(Collections.singletonList(topic));
+            while (System.currentTimeMillis() < deadline) {
+                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(200));
+                for (ConsumerRecord<String, String> record : records.records(topic)) {
+                    if (predicate.test(record.value())) {
+                        return Optional.of(record.value());
+                    }
+                }
+            }
+        }
+        return Optional.empty();
     }
 }
