@@ -10,11 +10,23 @@ import com.ecommerce.repository.OrderRepository;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -62,6 +74,23 @@ class OrderServiceTest {
                 .firstResult();
         assertNotNull(event);
         assertEquals("OrderCreated", event.eventType);
+    }
+
+    @Test
+    void createOrder_outboxEventReachesKafka() {
+        String marker = UUID.randomUUID().toString();
+        CreateOrderRequest request = new CreateOrderRequest(
+                "Kafka Flow Test " + marker,
+                "kafka-flow@example.com",
+                List.of(new OrderItemRequest("prod-1", "Gaming Chair", 1, new BigDecimal("50.00"))),
+                new BigDecimal("5.00"));
+
+        OrderResponse response = orderService.createOrder(request);
+
+        Optional<String> message = waitForKafkaMessage("outbox.event.Order",
+                value -> value.contains("\"orderId\":" + response.id()), 10);
+
+        assertTrue(message.isPresent(), "expected the order-created outbox event to reach Kafka");
     }
 
     @Test
@@ -123,5 +152,28 @@ class OrderServiceTest {
     void updateStatus_notFound_throwsNoSuchElementException() {
         assertThrows(NoSuchElementException.class,
                 () -> orderService.updateStatus(Long.MAX_VALUE, OrderStatus.CONFIRMED));
+    }
+
+    private Optional<String> waitForKafkaMessage(String topic, Predicate<String> predicate, int timeoutSeconds) {
+        long deadline = System.currentTimeMillis() + timeoutSeconds * 1000L;
+        Properties props = new Properties();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "test-group-" + UUID.randomUUID());
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+
+        try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props)) {
+            consumer.subscribe(Collections.singletonList(topic));
+            while (System.currentTimeMillis() < deadline) {
+                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(200));
+                for (ConsumerRecord<String, String> record : records.records(topic)) {
+                    if (predicate.test(record.value())) {
+                        return Optional.of(record.value());
+                    }
+                }
+            }
+        }
+        return Optional.empty();
     }
 }
