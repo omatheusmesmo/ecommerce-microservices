@@ -64,6 +64,57 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}:${{ github.sha }}-jvm
             ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}:latest-jvm
 
+  smoke-test:
+    name: Smoke test (${{ matrix.service }})
+    needs: [detect-modules, build-jvm]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-modules.outputs.modules) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Generate ephemeral JWT keypair
+        working-directory: .github/ci
+        run: |
+          openssl ecparam -name prime256v1 -genkey -noout -out privateKey.pem
+          openssl ec -in privateKey.pem -pubout -out publicKey.pem
+
+      - name: Start ${{ matrix.service }} and dependencies
+        working-directory: .github/ci
+        env:
+          REPO_OWNER: ${{ github.repository_owner }}
+          IMAGE_TAG: ${{ github.sha }}-jvm
+        run: docker compose -f docker-compose.smoke.yml up -d "${{ matrix.service }}"
+
+      - name: Wait for /q/health/ready
+        run: |
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/stderr -w "%{http_code}" http://localhost:8080/q/health/ready) && true
+            if [ "$code" = "200" ]; then
+              echo "Healthy after ${i} attempt(s)"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::${{ matrix.service }} never became ready"
+          exit 1
+
+      - name: Dump logs on failure
+        if: failure()
+        working-directory: .github/ci
+        run: docker compose -f docker-compose.smoke.yml logs
+
+      - name: Tear down
+        if: always()
+        working-directory: .github/ci
+        env:
+          REPO_OWNER: ${{ github.repository_owner }}
+          IMAGE_TAG: ${{ github.sha }}-jvm
+        run: docker compose -f docker-compose.smoke.yml down -v
+
   build-native:
     name: Build & push (${{ matrix.service }}, native)
     needs: detect-modules
