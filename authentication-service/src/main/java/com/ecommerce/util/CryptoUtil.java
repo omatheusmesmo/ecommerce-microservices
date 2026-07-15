@@ -15,11 +15,13 @@ import java.util.Base64;
 
 public class CryptoUtil {
 
-    private static final String AES_KEY = ConfigProvider.getConfig().getValue("app.encryption.key", String.class);
+    private static String aesKey() {
+        return ConfigProvider.getConfig().getValue("app.encryption.key", String.class);
+    }
 
     public static String encrypt(String data) {
         try {
-            SecretKeySpec key = new SecretKeySpec(AES_KEY.getBytes(), "AES");
+            SecretKeySpec key = new SecretKeySpec(aesKey().getBytes(), "AES");
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             byte[] iv = new byte[12];
             new SecureRandom().nextBytes(iv);
@@ -34,7 +36,7 @@ public class CryptoUtil {
 
     public static String decrypt(String encrypted) {
         try {
-            SecretKeySpec key = new SecretKeySpec(AES_KEY.getBytes(), "AES");
+            SecretKeySpec key = new SecretKeySpec(aesKey().getBytes(), "AES");
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             String[] parts = encrypted.split(":");
             byte[] iv = Base64.getDecoder().decode(parts[0]);
