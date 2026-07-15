@@ -1,5 +1,5 @@
 release:
   # Current version to release (edit this to trigger a release)
-  current-version: 999-SNAPSHOT
+  current-version: 0.1.1
   # Next development version after the release
   next-version: 999-SNAPSHOT
