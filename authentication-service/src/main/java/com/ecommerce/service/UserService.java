@@ -180,6 +180,7 @@ public class UserService {
         return UserResponse.from(user);
     }
 
+    @Transactional
     public void delete(Long userId, Long deleterId) {
         if (!isAdmin(deleterId)) {
             LOG.warnf("Unauthorized deletion attempt");
