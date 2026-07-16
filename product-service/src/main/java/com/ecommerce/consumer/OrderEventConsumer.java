@@ -95,43 +95,37 @@ public class OrderEventConsumer {
     }
 
     private void handleOrderCreated(OrderCreatedEvent event) {
-        try {
-            LOG.infof("[KAFKA] Processing OrderCreated event: orderId=%d, customer=%s, total=R$%.2f",
-                    event.orderId(), event.customerName(), event.totalAmount());
+        LOG.infof("[KAFKA] Processing OrderCreated event: orderId=%d, customer=%s, total=R$%.2f",
+                event.orderId(), event.customerName(), event.totalAmount());
 
-            for (var item : event.items()) {
-                try {
-                    productService.decreaseStock(item.productId(), item.quantity());
-                    LOG.infof("[KAFKA] Stock decreased for product %s: -%d", item.productId(), item.quantity());
-                } catch (Exception e) {
-                    LOG.errorf(e, "[KAFKA] Failed to decrease stock for product %s in order %d", item.productId(), event.orderId());
-                }
+        for (var item : event.items()) {
+            try {
+                productService.decreaseStock(item.productId(), item.quantity());
+                LOG.infof("[KAFKA] Stock decreased for product %s: -%d", item.productId(), item.quantity());
+            } catch (Exception e) {
+                LOG.errorf(e, "[KAFKA] Failed to decrease stock for product %s in order %d", item.productId(), event.orderId());
+                throw e;
             }
-
-            LOG.infof("[KAFKA] OrderCreated event processed successfully: orderId=%d", event.orderId());
-        } catch (Exception e) {
-            LOG.errorf(e, "[KAFKA] Failed to process OrderCreated event: orderId=%d", event.orderId());
         }
+
+        LOG.infof("[KAFKA] OrderCreated event processed successfully: orderId=%d", event.orderId());
     }
 
 
     private void handleOrderCancelled(OrderCancelledEvent event) {
-        try {
-            LOG.infof("[KAFKA] Processing OrderCancelled event: orderId=%d, customer=%s, total=R$%.2f",
-                    event.orderId(), event.customerName(), event.totalAmount());
+        LOG.infof("[KAFKA] Processing OrderCancelled event: orderId=%d, customer=%s, total=R$%.2f",
+                event.orderId(), event.customerName(), event.totalAmount());
 
-            for (var item : event.items()) {
-                try {
-                    productService.increaseStock(item.productId(), item.quantity());
-                    LOG.infof("[KAFKA] Stock increased for product %s: +%d", item.productId(), item.quantity());
-                } catch (Exception e) {
-                    LOG.errorf(e, "[KAFKA] Failed to increase stock for product %s in cancelled order %d", item.productId(), event.orderId());
-                }
+        for (var item : event.items()) {
+            try {
+                productService.increaseStock(item.productId(), item.quantity());
+                LOG.infof("[KAFKA] Stock increased for product %s: +%d", item.productId(), item.quantity());
+            } catch (Exception e) {
+                LOG.errorf(e, "[KAFKA] Failed to increase stock for product %s in cancelled order %d", item.productId(), event.orderId());
+                throw e;
             }
-
-            LOG.infof("[KAFKA] OrderCancelled event processed successfully: orderId=%d", event.orderId());
-        } catch (Exception e) {
-            LOG.errorf(e, "[KAFKA] Failed to process OrderCancelled event: orderId=%d", event.orderId());
         }
+
+        LOG.infof("[KAFKA] OrderCancelled event processed successfully: orderId=%d", event.orderId());
     }
 }

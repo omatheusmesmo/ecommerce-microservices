@@ -1,6 +1,11 @@
 package com.ecommerce.consumer;
 
+import com.ecommerce.entity.Product;
+import com.ecommerce.event.OrderCreatedEvent;
+import com.ecommerce.service.ProductService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -13,15 +18,24 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 public class OrderEventDeadLetterQueueTest {
+
+    @Inject
+    ProductService productService;
+
+    @Inject
+    ObjectMapper objectMapper;
 
     @Test
     public void malformedOrderEvent_isRoutedToDeadLetterQueue() {
@@ -33,6 +47,29 @@ public class OrderEventDeadLetterQueueTest {
         }
 
         assertTrue(waitForDlqMessage(marker), "Expected malformed message to be routed to the DLQ topic");
+    }
+
+    @Test
+    public void orderCreatedEvent_insufficientStock_exhaustsRetriesAndRoutesToDeadLetterQueue() throws Exception {
+        Product product = new Product("Low Stock Product", "Description", new BigDecimal("50.00"), 1, "Test Category");
+        Product created = productService.create(product);
+        String productId = created.id.toString();
+
+        OrderCreatedEvent.OrderItemEvent item = new OrderCreatedEvent.OrderItemEvent(
+                productId, "Low Stock Product", 5, new BigDecimal("50.00"), new BigDecimal("250.00"));
+        OrderCreatedEvent event = new OrderCreatedEvent(
+                42L, "Customer", "customer@example.com", "CONFIRMED", new BigDecimal("250.00"), List.of(item), LocalDateTime.now());
+        String eventJson = objectMapper.writeValueAsString(event);
+
+        try (KafkaProducer<String, String> producer = createProducer()) {
+            producer.send(new ProducerRecord<>("outbox.event.Order", productId, eventJson));
+        }
+
+        assertTrue(waitForDlqMessage(productId),
+                "Expected an event that exhausts stock-decrease retries to be routed to the DLQ topic");
+
+        Product unchanged = productService.findById(productId);
+        assertEquals(1, unchanged.stock, "stock should remain untouched since the update never succeeded");
     }
 
     private boolean waitForDlqMessage(String marker) {

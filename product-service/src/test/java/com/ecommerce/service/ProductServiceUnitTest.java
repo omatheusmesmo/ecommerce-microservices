@@ -200,6 +200,19 @@ class ProductServiceUnitTest {
     }
 
     @Test
+    void decreaseStock_allRetriesExhausted_throwsAndNeverPublishes(){
+        String id = new ObjectId().toString();
+        int quantity = 2;
+
+        when(productRepository.decreaseStock(id, quantity)).thenThrow(new RuntimeException("simulated DB down"));
+
+        assertThrows(RuntimeException.class, () -> productService.decreaseStock(id, quantity));
+
+        verify(productRepository, times(4)).decreaseStock(id, quantity);
+        verify(eventProducer, never()).publishStockChanged(any());
+    }
+
+    @Test
     void increaseStock_success_and_notFound(){
         String id = new ObjectId().toString();
         int quantity = 3;

@@ -76,6 +76,15 @@ class ProductResourceTest {
     }
 
     @Test
+    public void findById_malformedId_returnsBadRequest() {
+        given()
+                .when()
+                .get("/not-a-valid-object-id")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
     public void findByCategory_returnsList(){
         given()
                 .when()
@@ -132,6 +141,30 @@ class ProductResourceTest {
                 .put("/000000000000000000000000")
                 .then()
                 .statusCode(404);
+    }
+
+    @Test
+    @TestSecurity(user = "seller", roles = "SELLER")
+    public void update_malformedId_returnsBadRequest() {
+        Product updatedProduct = new Product("Name", "Description", new BigDecimal("100.00"), 5, "Test");
+
+        given()
+                .body(updatedProduct)
+                .contentType(ContentType.JSON)
+                .when()
+                .put("/not-a-valid-object-id")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "ADMIN")
+    public void delete_malformedId_returnsBadRequest() {
+        given()
+                .when()
+                .delete("/not-a-valid-object-id")
+                .then()
+                .statusCode(400);
     }
 
     @Test
