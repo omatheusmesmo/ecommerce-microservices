@@ -11,6 +11,7 @@ import com.ecommerce.util.CryptoUtil;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
+import io.restassured.response.ValidatableResponse;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
@@ -142,7 +143,7 @@ class AccountLifecycleIntegrationTest {
         });
     }
 
-    private io.restassured.response.ValidatableResponse register(String ip, String email, String password, String fullName) {
+    private ValidatableResponse register(String ip, String email, String password, String fullName) {
         return given()
                 .header("X-Forwarded-For", ip)
                 .contentType(ContentType.JSON)
@@ -151,7 +152,7 @@ class AccountLifecycleIntegrationTest {
                 .then();
     }
 
-    private io.restassured.response.ValidatableResponse login(String ip, String email, String password) {
+    private ValidatableResponse login(String ip, String email, String password) {
         return given()
                 .header("X-Forwarded-For", ip)
                 .contentType(ContentType.JSON)
@@ -160,7 +161,7 @@ class AccountLifecycleIntegrationTest {
                 .then();
     }
 
-    private io.restassured.response.ValidatableResponse activate(String token) {
+    private ValidatableResponse activate(String token) {
         return given()
                 .contentType(ContentType.JSON)
                 .body("{\"token\":\"" + token + "\"}")
