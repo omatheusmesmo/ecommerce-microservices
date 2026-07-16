@@ -73,6 +73,71 @@ public class OrderEventConsumerTest {
         assertFalse(waitForDlqMessage(marker, 10_000), "Well-formed event should not be routed to the DLQ topic");
     }
 
+    @Test
+    public void wellFormedOrderStatusChangedEvent_isDispatchedAndNotRoutedToDeadLetterQueue() throws Exception {
+        String marker = UUID.randomUUID().toString();
+        Map<String, Object> event = Map.of(
+                "orderId", 1,
+                "customerEmail", marker + "@example.com",
+                "oldStatus", "PENDING",
+                "newStatus", "CONFIRMED",
+                "changedAt", LocalDateTime.now().toString()
+        );
+        String eventJson = objectMapper.writeValueAsString(event);
+
+        try (KafkaProducer<String, String> producer = createProducer()) {
+            producer.send(new ProducerRecord<>("outbox.event.Order", marker, eventJson));
+        }
+
+        assertFalse(waitForDlqMessage(marker, 10_000),
+                "Well-formed OrderStatusChanged event should be dispatched to that branch, not the DLQ");
+    }
+
+    @Test
+    public void doubleEncodedOrderCreatedEvent_isParsedAndNotRoutedToDeadLetterQueue() throws Exception {
+        String marker = UUID.randomUUID().toString();
+        Map<String, Object> item = Map.of(
+                "productId", marker,
+                "productName", "Test Product",
+                "quantity", 1,
+                "unitPrice", new BigDecimal("10.00"),
+                "subtotal", new BigDecimal("10.00")
+        );
+        Map<String, Object> event = Map.of(
+                "orderId", 2,
+                "customerName", "Customer",
+                "customerEmail", "customer@example.com",
+                "status", "CONFIRMED",
+                "totalAmount", new BigDecimal("10.00"),
+                "shippingCost", new BigDecimal("0.00"),
+                "items", List.of(item),
+                "createdAt", LocalDateTime.now().toString()
+        );
+        String innerJson = objectMapper.writeValueAsString(event);
+        String doubleEncodedJson = objectMapper.writeValueAsString(innerJson);
+
+        try (KafkaProducer<String, String> producer = createProducer()) {
+            producer.send(new ProducerRecord<>("outbox.event.Order", marker, doubleEncodedJson));
+        }
+
+        assertFalse(waitForDlqMessage(marker, 10_000),
+                "Double-encoded event should be unwrapped and parsed, not routed to the DLQ");
+    }
+
+    @Test
+    public void unknownEventShape_isRoutedToDeadLetterQueue() throws Exception {
+        String marker = UUID.randomUUID().toString();
+        Map<String, Object> event = Map.of("orderId", 3, "marker", marker);
+        String eventJson = objectMapper.writeValueAsString(event);
+
+        try (KafkaProducer<String, String> producer = createProducer()) {
+            producer.send(new ProducerRecord<>("outbox.event.Order", marker, eventJson));
+        }
+
+        assertTrue(waitForDlqMessage(marker, 30_000),
+                "A well-formed but unrecognized event shape should be routed to the DLQ");
+    }
+
     private boolean waitForDlqMessage(String marker, long timeoutMillis) {
         try (KafkaConsumer<String, String> consumer = createConsumer()) {
             consumer.subscribe(List.of("outbox.event.Order.dlq"));
