@@ -30,13 +30,17 @@ public class AuthService {
     @Inject
     JWTParser jwtParser;
 
+    @Inject
+    Argon2Executor argon2Executor;
+
     private static final String DUMMY_PASSWORD_HASH =
             CryptoUtil.hashPassword("timing-attack-mitigation-dummy-password");
 
     public TokenResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email());
         String storedHash = user != null ? user.passwordHash : DUMMY_PASSWORD_HASH;
-        boolean passwordMatches = CryptoUtil.verifyPassword(request.password(), storedHash);
+        boolean passwordMatches =
+                argon2Executor.execute(() -> CryptoUtil.verifyPassword(request.password(), storedHash));
         if (user == null || !user.active || !passwordMatches) {
             throw new SecurityException("Invalid credentials or inactive user");
         }

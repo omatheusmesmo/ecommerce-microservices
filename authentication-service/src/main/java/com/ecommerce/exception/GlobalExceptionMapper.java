@@ -4,6 +4,7 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import org.eclipse.microprofile.faulttolerance.exceptions.BulkheadException;
 import org.jboss.logging.Logger;
 
 import java.time.LocalDateTime;
@@ -48,6 +49,15 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
                     Response.Status.BAD_REQUEST,
                     "Invalid Operation",
                     exception.getMessage()
+            );
+        }
+
+        if (exception instanceof BulkheadException) {
+            LOG.warnf("Bulkhead limit reached: %s", exception.getMessage());
+            return buildErrorResponse(
+                    Response.Status.SERVICE_UNAVAILABLE,
+                    "Service Unavailable",
+                    "The server is under heavy load. Please retry shortly."
             );
         }
 

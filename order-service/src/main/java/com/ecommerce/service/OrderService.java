@@ -14,10 +14,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject. Inject;
 import jakarta.transaction. Transactional;
+import org.eclipse.microprofile.faulttolerance.Timeout;
 import org.jboss.logging.Logger;
 
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java. util. List;
 import java.util.NoSuchElementException;
 
@@ -82,6 +84,7 @@ public class OrderService {
         return response;
     }
 
+    @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     public OrderResponse findById(Long id) {
         LOG.debugf("Finding order by ID: %d", id);
 
@@ -90,6 +93,7 @@ public class OrderService {
                 .orElseThrow(() -> new NoSuchElementException("Order not found with id: " + id));
     }
 
+    @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     public List<OrderResponse> findAll() {
         LOG.debug("Listing all orders");
 
@@ -98,6 +102,7 @@ public class OrderService {
                 .toList();
     }
 
+    @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     public List<OrderResponse> findByStatus(OrderStatus status) {
         LOG.debugf("Finding orders by status: %s", status);
 
@@ -106,6 +111,7 @@ public class OrderService {
                 .toList();
     }
 
+    @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     public List<OrderResponse> findByCustomerEmail(String email) {
         LOG.debugf("Finding orders by customer email: %s", email);
 

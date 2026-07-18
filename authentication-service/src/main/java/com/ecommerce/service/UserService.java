@@ -37,6 +37,8 @@ public class UserService {
     Event<TokenUrlEvent> tokenUrlEventEmitter;
     @Inject
     Event<TokenConfirmationEvent> tokenConfirmationEventEmitter;
+    @Inject
+    Argon2Executor argon2Executor;
 
     @Inject
     @ConfigProperty(name = "ADMIN_PASSWORD")
@@ -76,7 +78,7 @@ public class UserService {
             throw new IllegalArgumentException("Email already exists");
         }
 
-        String hashedPassword = CryptoUtil.hashPassword(request.password());
+        String hashedPassword = argon2Executor.execute(() -> CryptoUtil.hashPassword(request.password()));
         User user = request.toUser(hashedPassword);
         user.active = false;
 
@@ -124,7 +126,7 @@ public class UserService {
             throw new SecurityException("Invalid reset token");
         }
         User user = userRepository.findById(token.userId);
-        user.passwordHash = CryptoUtil.hashPassword(request.newPassword());
+        user.passwordHash = argon2Executor.execute(() -> CryptoUtil.hashPassword(request.newPassword()));
         user.persist();
         userActionTokenService.deleteToken(token);
         tokenConfirmationEventEmitter.fire(new TokenConfirmationEvent(user.id, user.email, ActionType.RESET));

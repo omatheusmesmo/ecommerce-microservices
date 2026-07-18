@@ -14,9 +14,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.bson.types.ObjectId;
 import org.eclipse.microprofile.faulttolerance.Retry;
+import org.eclipse.microprofile.faulttolerance.Timeout;
 import org.jboss.logging.Logger;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 
@@ -31,6 +33,7 @@ public class ProductService {
     @Inject
     ProductEventProducer eventProducer;
 
+    @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     @CacheResult(cacheName = "products-cache")
     public List<Product> findAll() {
         LOG.info("Fetching all products from MongoDB (cache miss)");
@@ -38,17 +41,20 @@ public class ProductService {
     }
 
     // no per-item cache to avoid null-caching issues with Redis
+    @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     public Product findById(String id) {
         LOG.infof("Fetching product %s from MongoDB", id);
         return productRepository.findById(new ObjectId(id));
     }
 
+    @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     @CacheResult(cacheName = "products-by-category")
     public List<Product> findByCategory(String category) {
         LOG.debugf("Searching products by category: %s (cache miss)", category);
         return productRepository.findByCategory(category);
     }
 
+    @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     @CacheResult(cacheName = "products-active")
     public List<Product> findActiveProducts() {
         LOG.debug("Searching active products (cache miss)");
