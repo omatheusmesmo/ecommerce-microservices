@@ -488,12 +488,6 @@ services:
         condition: service_started
       kafka-init:
         condition: service_completed_successfully
-    healthcheck:
-      test: ["CMD-SHELL", "true"]  # ← Simplificado (UBI Micro não tem wget/curl)
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
     restart: on-failure
     deploy:
       resources:
@@ -536,12 +530,6 @@ services:
         condition:  service_healthy
       kafka:
         condition: service_started
-    healthcheck:
-      test: ["CMD-SHELL", "true"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
     restart: unless-stopped
     deploy:
       resources:
@@ -581,12 +569,6 @@ services:
     depends_on:
       kafka:
         condition: service_started
-    healthcheck:
-      test: ["CMD-SHELL", "true"]
-      interval:  10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
     restart: unless-stopped
     deploy:
       resources:
@@ -633,12 +615,6 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
-    healthcheck:
-      test: ["CMD-SHELL", "true"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
     restart: unless-stopped
     deploy:
       resources:

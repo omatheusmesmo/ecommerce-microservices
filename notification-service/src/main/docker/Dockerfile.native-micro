@@ -16,17 +16,14 @@
 #
 # docker run -i --rm -p 8080:8080 quarkus/notification-service
 #
-# The `quay.io/quarkus/ubi9-quarkus-micro-image:2.0` base image is based on UBI 9.
-# To use UBI 8, switch to `quay.io/quarkus/quarkus-micro-image:2.0`.
+# The `quay.io/quarkus/quarkus-distroless-image:2.0` base image is a minimal (~9MB)
+# glibc distroless image for Quarkus native executables.
 ###
-FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
+FROM quay.io/quarkus/quarkus-distroless-image:2.0
 WORKDIR /work/
-RUN chown 1001 /work \
-    && chmod "g+rwX" /work \
-    && chown 1001:root /work
-COPY --chown=1001:root --chmod=0755 target/*-runner /work/application
+COPY --chmod=0755 target/*-runner /work/application
 
 EXPOSE 8080
-USER 1001
+USER nonroot
 
 ENTRYPOINT ["./application", "-Dquarkus.http.host=0.0.0.0"]
