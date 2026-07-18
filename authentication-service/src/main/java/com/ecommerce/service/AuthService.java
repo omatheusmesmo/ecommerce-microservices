@@ -30,9 +30,14 @@ public class AuthService {
     @Inject
     JWTParser jwtParser;
 
+    private static final String DUMMY_PASSWORD_HASH =
+            CryptoUtil.hashPassword("timing-attack-mitigation-dummy-password");
+
     public TokenResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email());
-        if (user == null || !user.active || !CryptoUtil.verifyPassword(request.password(), user.passwordHash)) {
+        String storedHash = user != null ? user.passwordHash : DUMMY_PASSWORD_HASH;
+        boolean passwordMatches = CryptoUtil.verifyPassword(request.password(), storedHash);
+        if (user == null || !user.active || !passwordMatches) {
             throw new SecurityException("Invalid credentials or inactive user");
         }
         String accessToken = generateAccessToken(user);

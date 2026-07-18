@@ -49,7 +49,7 @@ class AccountLifecycleIntegrationTest {
     void register_activate_login_refresh_fullLifecycle() {
         String ip = "198.51.100.10";
         String email = "lifecycle-" + System.nanoTime() + "@example.com";
-        String password = "Passw0rd!23";
+        String password = "Passw0rd!234";
 
         register(ip, email, password, "Lifecycle User").statusCode(201).body("active", is(false));
 
@@ -79,7 +79,7 @@ class AccountLifecycleIntegrationTest {
     void requestPasswordReset_thenReset_allowsLoginWithNewPassword_andRejectsOldPassword() {
         String ip = "198.51.100.20";
         String email = "reset-" + System.nanoTime() + "@example.com";
-        String oldPassword = "Passw0rd!23";
+        String oldPassword = "Passw0rd!234";
         String newPassword = "NewPassw0rd!45";
 
         registerAndActivate(ip, email, oldPassword);
@@ -117,7 +117,7 @@ class AccountLifecycleIntegrationTest {
         String adminToken = login(adminIp, adminEmail, adminPassword).statusCode(200).extract().path("accessToken");
 
         String targetEmail = "target-" + System.nanoTime() + "@example.com";
-        String targetPassword = "Passw0rd!23";
+        String targetPassword = "Passw0rd!234";
         registerAndActivate(targetIp, targetEmail, targetPassword);
         String targetToken = login(targetIp, targetEmail, targetPassword).statusCode(200).extract().path("accessToken");
         Long targetId = userRepository.findByEmail(targetEmail).id;
