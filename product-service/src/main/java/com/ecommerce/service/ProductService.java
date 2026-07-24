@@ -35,9 +35,9 @@ public class ProductService {
 
     @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     @CacheResult(cacheName = "products-cache")
-    public List<Product> findAll() {
+    public List<Product> findAll(int page, int size) {
         LOG.info("Fetching all products from MongoDB (cache miss)");
-        return productRepository.listAll();
+        return productRepository.findAll(page, size);
     }
 
     // no per-item cache to avoid null-caching issues with Redis
@@ -49,16 +49,16 @@ public class ProductService {
 
     @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     @CacheResult(cacheName = "products-by-category")
-    public List<Product> findByCategory(String category) {
+    public List<Product> findByCategory(String category, int page, int size) {
         LOG.debugf("Searching products by category: %s (cache miss)", category);
-        return productRepository.findByCategory(category);
+        return productRepository.findByCategory(category, page, size);
     }
 
     @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     @CacheResult(cacheName = "products-active")
-    public List<Product> findActiveProducts() {
+    public List<Product> findActiveProducts(int page, int size) {
         LOG.debug("Searching active products (cache miss)");
-        return productRepository.findActiveProducts();
+        return productRepository.findActiveProducts(page, size);
     }
 
     @CacheInvalidateAll(cacheName = "products-cache")
@@ -159,7 +159,7 @@ public class ProductService {
         return deleted;
     }
 
-    @Retry(delay = 1000)
+    @Retry(delay = 1000, abortOn = {IllegalArgumentException.class, IllegalStateException.class})
     @CacheInvalidateAll(cacheName = "products-cache")
     @CacheInvalidateAll(cacheName = "products-by-category")
     @CacheInvalidateAll(cacheName = "products-active")
@@ -187,7 +187,7 @@ public class ProductService {
         LOG.infof("Stock decreased atomically for product %s: -%d", productId, quantity);
     }
 
-    @Retry(delay = 1000)
+    @Retry(delay = 1000, abortOn = {IllegalArgumentException.class, IllegalStateException.class})
     @CacheInvalidateAll(cacheName = "products-cache")
     @CacheInvalidateAll(cacheName = "products-by-category")
     @CacheInvalidateAll(cacheName = "products-active")

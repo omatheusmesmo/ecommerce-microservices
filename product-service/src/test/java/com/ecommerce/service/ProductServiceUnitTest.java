@@ -42,13 +42,13 @@ class ProductServiceUnitTest {
         p1.id = new ObjectId();
         Product p2 = new Product("B", "b", new BigDecimal("2.0"), 3, "cat");
         p2.id = new ObjectId();
-        when(productRepository.listAll()).thenReturn(List.of(p1, p2));
+        when(productRepository.findAll(0, 20)).thenReturn(List.of(p1, p2));
 
-        List<Product> result = productService.findAll();
+        List<Product> result = productService.findAll(0, 20);
 
         assertNotNull(result);
         assertEquals(2, result.size());
-        verify(productRepository, times(1)).listAll();
+        verify(productRepository, times(1)).findAll(0, 20);
     }
 
     @Test
@@ -76,11 +76,11 @@ class ProductServiceUnitTest {
         Product p = new Product("C", "d", new BigDecimal("3.0"), 1, "cat");
         p.id = new ObjectId();
 
-        when(productRepository.findByCategory("cat")).thenReturn(List.of(p));
-        when(productRepository.findActiveProducts()).thenReturn(List.of(p));
+        when(productRepository.findByCategory("cat", 0, 20)).thenReturn(List.of(p));
+        when(productRepository.findActiveProducts(0, 20)).thenReturn(List.of(p));
 
-        assertEquals(1, productService.findByCategory("cat").size());
-        assertEquals(1, productService.findActiveProducts().size());
+        assertEquals(1, productService.findByCategory("cat", 0, 20).size());
+        assertEquals(1, productService.findActiveProducts(0, 20).size());
     }
 
     @Test
@@ -172,6 +172,8 @@ class ProductServiceUnitTest {
         when(productRepository.decreaseStock(id, quantity)).thenReturn(0L);
 
         assertThrows(IllegalArgumentException.class, () -> productService.decreaseStock(id, quantity));
+        // Business-rule failure must abort immediately, not exhaust @Retry (would be 4 calls)
+        verify(productRepository, times(1)).decreaseStock(id, quantity);
         verify(eventProducer, never()).publishStockChanged(any());
     }
 

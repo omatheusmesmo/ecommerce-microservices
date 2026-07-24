@@ -5,6 +5,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
+import io.quarkus.panache.common.Page;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.bson.types.ObjectId;
 
@@ -14,12 +15,16 @@ import java.util.List;
 @ApplicationScoped
 public class ProductRepository implements PanacheMongoRepository<Product> {
 
-    public List<Product> findByCategory(String category){
-        return list("category", category);
+    public List<Product> findAll(int page, int size){
+        return findAll().page(Page.of(page, size)).list();
     }
 
-    public List<Product> findActiveProducts(){
-        return list("active", true);
+    public List<Product> findByCategory(String category, int page, int size){
+        return find("category", category).page(Page.of(page, size)).list();
+    }
+
+    public List<Product> findActiveProducts(int page, int size){
+        return find("active", true).page(Page.of(page, size)).list();
     }
 
     public List<Product> findByNameContaining(String name){

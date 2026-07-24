@@ -44,6 +44,43 @@ class ProductResourceTest {
     }
 
     @Test
+    public void findAll_respectsSizeLimit() {
+        given()
+                .when()
+                .get("?size=1")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(lessThanOrEqualTo(1)));
+    }
+
+    @Test
+    public void findAll_rejectsSizeAboveMax() {
+        given()
+                .when()
+                .get("?size=101")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    public void findAll_rejectsZeroSize() {
+        given()
+                .when()
+                .get("?size=0")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    public void findAll_rejectsNegativePage() {
+        given()
+                .when()
+                .get("?page=-1")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
     @TestSecurity(user = "admin", roles = "ADMIN")
     public void findById_returnsProduct_whenExists() {
         Product product = new Product("Test Product", "Description", new BigDecimal("100.00"), 5, "Test");

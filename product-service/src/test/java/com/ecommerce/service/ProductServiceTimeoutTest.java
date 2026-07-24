@@ -19,7 +19,7 @@ class ProductServiceTimeoutTest {
 
     @Test
     void findAll_exceedingTimeout_throwsTimeoutException() {
-        assertThrows(TimeoutException.class, () -> productService.findAll());
+        assertThrows(TimeoutException.class, () -> productService.findAll(0, 20));
     }
 
     public static class TinyTimeoutProfile implements QuarkusTestProfile {

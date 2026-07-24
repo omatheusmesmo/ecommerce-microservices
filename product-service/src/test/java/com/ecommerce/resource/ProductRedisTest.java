@@ -3,6 +3,7 @@ package com.ecommerce.resource;
 import com.ecommerce.entity.Product;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
+import io.quarkus.cache.CompositeCacheKey;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -31,7 +32,8 @@ public class ProductRedisTest {
                 .then()
                 .statusCode(200);
 
-        Object cached = productsCache.get(productsCache.getDefaultKey(), k -> null).await().indefinitely();
+        // findAll(page, size) is cached under a composite key of its arguments, not the no-arg default key
+        Object cached = productsCache.get(new CompositeCacheKey(0, 20), k -> null).await().indefinitely();
         assertNotNull(cached);
     }
 

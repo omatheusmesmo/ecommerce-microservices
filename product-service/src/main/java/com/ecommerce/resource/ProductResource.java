@@ -2,11 +2,11 @@ package com.ecommerce.resource;
 
 import com.ecommerce.entity.Product;
 import com.ecommerce.service.ProductService;
-import io.quarkus.security.Authenticated;
-import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -25,9 +25,11 @@ public class ProductResource {
     ProductService productService;
 
     @GET
-    public List<Product> findAll() {
-        LOG.debug("GET /products - Listing all products");
-        return productService.findAll();
+    public List<Product> findAll(
+            @QueryParam("page") @DefaultValue("0") @Min(0) int page,
+            @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) int size) {
+        LOG.debugf("GET /products - Listing products (page=%d, size=%d)", page, size);
+        return productService.findAll(page, size);
     }
 
     @GET
@@ -44,16 +46,21 @@ public class ProductResource {
 
     @GET
     @Path("/category/{category}")
-    public List<Product> findByCategory(@PathParam("category") String category) {
-        LOG.debugf("GET /products/category/%s", category);
-        return productService.findByCategory(category);
+    public List<Product> findByCategory(
+            @PathParam("category") String category,
+            @QueryParam("page") @DefaultValue("0") @Min(0) int page,
+            @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) int size) {
+        LOG.debugf("GET /products/category/%s (page=%d, size=%d)", category, page, size);
+        return productService.findByCategory(category, page, size);
     }
 
     @GET
     @Path("/active")
-    public List<Product> findActiveProducts() {
-        LOG.debug("GET /products/active");
-        return productService.findActiveProducts();
+    public List<Product> findActiveProducts(
+            @QueryParam("page") @DefaultValue("0") @Min(0) int page,
+            @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) int size) {
+        LOG.debugf("GET /products/active (page=%d, size=%d)", page, size);
+        return productService.findActiveProducts(page, size);
     }
 
     @POST
