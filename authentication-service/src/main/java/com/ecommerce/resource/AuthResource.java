@@ -30,7 +30,6 @@ public class AuthResource {
     @POST
     @Path("/register")
     public Response register(@Valid RegisterRequest request){
-        LOG.debugf("POST /auth/register request received: email=%s", request.email());
         UserResponse user = userService.register(request);
         LOG.infof("User registered: %s", user.email());
         return Response.status(Response.Status.CREATED).entity(user).build();
@@ -39,7 +38,6 @@ public class AuthResource {
     @POST
     @Path("/activate")
     public Response activate(@Valid ActivationRequest request) {
-        LOG.debugf("POST /auth/activate request received: token=%s", request.token());
         userService.activateUser(request);
         LOG.infof("User activated with token");
         return Response.ok(Map.of("message", "Account activated successfully")).build();
@@ -48,7 +46,6 @@ public class AuthResource {
     @POST
     @Path("/request-password-reset")
     public Response requestPasswordReset(@Valid PasswordResetRequest request) {
-        LOG.debugf("POST /auth/request-password-reset request received: email=%s", request.email());
         userService.requestPasswordReset(request);
         LOG.infof("Password reset requested for: %s", request.email());
         return Response.ok(Map.of("message", "Password reset email sent if account exists")).build();
@@ -57,7 +54,6 @@ public class AuthResource {
     @POST
     @Path("/reset-password")
     public Response resetPassword(@Valid PasswordResetUpdateRequest request) {
-        LOG.debugf("POST /auth/reset-password request received: token=%s", request.token());
         userService.resetPassword(request);
         LOG.infof("Password reset successfully");
         return Response.ok(Map.of("message", "Password reset successfully")).build();
@@ -66,8 +62,6 @@ public class AuthResource {
     @POST
     @Path("/login")
     public Response login(@Valid LoginRequest request){
-        LOG.debugf("POST /auth/login request received: email=%s", request.email());
-
         TokenResponse tokens = authService.login(request);
         LOG.infof("User logged in: %s", request.email());
 
@@ -77,7 +71,6 @@ public class AuthResource {
     @POST
     @Path("/refresh")
     public Response refresh(@Valid RefreshRequest request){
-        LOG.debugf("POST /auth/refresh request received: refreshToken=%s", request.refreshToken());
         TokenResponse newTokens = authService.refresh(request);
         LOG.infof("Token refreshed successfully");
         return Response.ok(newTokens).build();

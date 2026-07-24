@@ -28,14 +28,12 @@ public class ProductResource {
     public List<Product> findAll(
             @QueryParam("page") @DefaultValue("0") @Min(0) int page,
             @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) int size) {
-        LOG.debugf("GET /products - Listing products (page=%d, size=%d)", page, size);
         return productService.findAll(page, size);
     }
 
     @GET
     @Path("/{id}")
     public Response findById(@PathParam("id") String id) {
-        LOG.debugf("GET /products/%s - Finding product by ID", id);
         Product product = productService.findById(id);
         if (product == null) {
             LOG.warnf("Product %s not found", id);
@@ -50,7 +48,6 @@ public class ProductResource {
             @PathParam("category") String category,
             @QueryParam("page") @DefaultValue("0") @Min(0) int page,
             @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) int size) {
-        LOG.debugf("GET /products/category/%s (page=%d, size=%d)", category, page, size);
         return productService.findByCategory(category, page, size);
     }
 
@@ -59,7 +56,6 @@ public class ProductResource {
     public List<Product> findActiveProducts(
             @QueryParam("page") @DefaultValue("0") @Min(0) int page,
             @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) int size) {
-        LOG.debugf("GET /products/active (page=%d, size=%d)", page, size);
         return productService.findActiveProducts(page, size);
     }
 

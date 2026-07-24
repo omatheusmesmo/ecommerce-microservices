@@ -25,8 +25,6 @@ public class AuthenticationEventConsumer {
     @Incoming("authentication-email")
     @Blocking
     public void onAuthenticationEvent(String message) {
-        LOG.debugf("[KAFKA] Received raw message from authentication-email: %s", message);
-
         JsonNode jsonNode;
         try {
             jsonNode = objectMapper.readTree(message);

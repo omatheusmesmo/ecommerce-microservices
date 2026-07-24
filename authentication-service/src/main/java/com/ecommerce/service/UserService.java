@@ -87,7 +87,7 @@ public class UserService {
         UserActionToken token = userActionTokenService.createForUser(user.id, ActionType.ACTIVATE);
         String rawToken = userActionTokenService.getRawToken(token);
 
-        LOG.debugf("Activation token created: %s for user %s", rawToken, user.email);
+        LOG.debugf("Activation token created for user id=%d", user.id);
 
         String activationUrl = frontendBaseUrl + "/activate?token=" + rawToken;
         tokenUrlEventEmitter.fire(new TokenUrlEvent(user.id, user.email, ActionType.ACTIVATE, activationUrl));
@@ -113,7 +113,7 @@ public class UserService {
         if (user != null) {
             var token = userActionTokenService.createForUser(user.id, ActionType.RESET);
             String rawToken = userActionTokenService.getRawToken(token);
-            LOG.debugf("Password reset token created: %s for user %s", rawToken, user.email);
+            LOG.debugf("Password reset token created for user id=%d", user.id);
             String resetUrl = frontendBaseUrl + "/reset-password?token=" + rawToken;
             tokenUrlEventEmitter.fire(new TokenUrlEvent(user.id, user.email, ActionType.RESET, resetUrl));
         }
