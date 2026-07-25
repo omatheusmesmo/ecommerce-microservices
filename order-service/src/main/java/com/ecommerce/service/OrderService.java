@@ -127,12 +127,31 @@ public class OrderService {
         Order order = orderRepository.findByIdOptional(id)
                 .orElseThrow(() -> new NoSuchElementException("Order not found with id: " + id));
 
+        return applyTransition(order, newStatus);
+    }
+
+    @Transactional
+    public void cancelOrder(Long id) {
+        LOG.infof("Cancelling order:  %d", id);
+
+        Order order = orderRepository.findByIdOptional(id)
+                .orElseThrow(() -> new NoSuchElementException("Order not found with id: " + id));
+
+        applyTransition(order, OrderStatus.CANCELLED);
+    }
+
+    private OrderResponse applyTransition(Order order, OrderStatus newStatus) {
         OrderStatus oldStatus = order.status;
+
+        if (!oldStatus.canTransitionTo(newStatus)) {
+            throw new IllegalStateException(
+                    "Cannot transition order from " + oldStatus + " to " + newStatus);
+        }
 
         order.status = newStatus;
         orderRepository.persist(order);
 
-        LOG.infof("Order %d status updated from %s to %s", id, oldStatus, newStatus);
+        LOG.infof("Order %d status updated from %s to %s", order.id, oldStatus, newStatus);
 
         OrderStatusChangedEvent event = new OrderStatusChangedEvent(
                 order.id,
@@ -156,54 +175,5 @@ public class OrderService {
         }
 
         return OrderResponse.fromWithoutItems(order);
-    }
-
-    @Transactional
-    public void cancelOrder(Long id) {
-        LOG.infof("Cancelling order:  %d", id);
-
-        Order order = orderRepository.findByIdOptional(id)
-                .orElseThrow(() -> new NoSuchElementException("Order not found with id: " + id));
-
-        if (order.status == OrderStatus. DELIVERED) {
-            throw new IllegalStateException("Cannot cancel a delivered order");
-        }
-
-        if (order.status == OrderStatus. CANCELLED) {
-            throw new IllegalStateException("Order is already cancelled");
-        }
-
-        OrderStatus oldStatus = order.status;
-        order.status = OrderStatus.CANCELLED;
-        orderRepository.persist(order);
-
-        LOG.infof("Order %d cancelled", id);
-
-        OrderStatusChangedEvent event = new OrderStatusChangedEvent(
-                order. id,
-                oldStatus,
-                OrderStatus.CANCELLED,
-                order.customerEmail,
-                LocalDateTime.now()
-        );
-
-        OutboxEvent outboxEvent = null;
-        try {
-            String eventJson = objectMapper.writeValueAsString(event);
-            LOG.debugf("Serialized OrderStatusChangedEvent (cancel): %s", eventJson);
-
-            outboxEvent = new OutboxEvent(
-                    "Order",
-                    order.id.toString(),
-                    "OrderStatusChanged",
-                    eventJson
-            );
-            outboxEvent.persist();
-
-            LOG.infof("Cancel event persisted to outbox: aggregate_type=%s, event_type=%s, aggregate_id=%s",
-                    "Order", "OrderStatusChanged", order.id);
-        } catch (JsonProcessingException e) {
-            LOG.errorf(e, "Failed to serialize OrderStatusChangedEvent to JSON for order: %d", order.id);
-        }
     }
 }

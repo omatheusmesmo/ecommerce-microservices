@@ -2,8 +2,10 @@ package com.ecommerce.exception;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import jakarta.persistence.OptimisticLockException;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.faulttolerance.exceptions.TimeoutException;
+import org.hibernate.StaleObjectStateException;
 import org.junit.jupiter.api.Test;
 
 class GlobalExceptionMapperTest {
@@ -14,5 +16,18 @@ class GlobalExceptionMapperTest {
     void timeoutException_mapsTo503() {
         Response response = mapper.toResponse(new TimeoutException("timed out"));
         assertEquals(Response.Status.SERVICE_UNAVAILABLE.getStatusCode(), response.getStatus());
+    }
+
+    @Test
+    void optimisticLockException_mapsTo409() {
+        Response response = mapper.toResponse(new OptimisticLockException("stale order"));
+        assertEquals(Response.Status.CONFLICT.getStatusCode(), response.getStatus());
+    }
+
+    @Test
+    void wrappedStaleStateException_mapsTo409() {
+        Response response = mapper.toResponse(
+                new RuntimeException("commit failed", new StaleObjectStateException("Order", 1L)));
+        assertEquals(Response.Status.CONFLICT.getStatusCode(), response.getStatus());
     }
 }

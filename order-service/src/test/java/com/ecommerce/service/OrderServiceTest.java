@@ -116,7 +116,7 @@ class OrderServiceTest {
 
         IllegalStateException ex = assertThrows(IllegalStateException.class,
                 () -> orderService.cancelOrder(id));
-        assertEquals("Cannot cancel a delivered order", ex.getMessage());
+        assertEquals("Cannot transition order from DELIVERED to CANCELLED", ex.getMessage());
         assertEquals(OrderStatus.DELIVERED, orderRepository.findById(id).status);
     }
 
@@ -127,7 +127,7 @@ class OrderServiceTest {
 
         IllegalStateException ex = assertThrows(IllegalStateException.class,
                 () -> orderService.cancelOrder(id));
-        assertEquals("Order is already cancelled", ex.getMessage());
+        assertEquals("Cannot transition order from CANCELLED to CANCELLED", ex.getMessage());
     }
 
     @Test
@@ -152,6 +152,39 @@ class OrderServiceTest {
     void updateStatus_notFound_throwsNoSuchElementException() {
         assertThrows(NoSuchElementException.class,
                 () -> orderService.updateStatus(Long.MAX_VALUE, OrderStatus.CONFIRMED));
+    }
+
+    @Test
+    @TestTransaction
+    void updateStatus_illegalTransition_throwsAndKeepsStatus() {
+        Long id = persistOrder(OrderStatus.DELIVERED);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> orderService.updateStatus(id, OrderStatus.PENDING));
+        assertEquals("Cannot transition order from DELIVERED to PENDING", ex.getMessage());
+        assertEquals(OrderStatus.DELIVERED, orderRepository.findById(id).status);
+    }
+
+    @Test
+    @TestTransaction
+    void updateStatus_skippingStates_isRejected() {
+        Long id = persistOrder(OrderStatus.PENDING);
+
+        assertThrows(IllegalStateException.class,
+                () -> orderService.updateStatus(id, OrderStatus.SHIPPED));
+        assertEquals(OrderStatus.PENDING, orderRepository.findById(id).status);
+    }
+
+    @Test
+    @TestTransaction
+    void updateStatus_walksTheHappyPath_toDelivered() {
+        Long id = persistOrder(OrderStatus.PENDING);
+
+        orderService.updateStatus(id, OrderStatus.CONFIRMED);
+        orderService.updateStatus(id, OrderStatus.SHIPPED);
+        orderService.updateStatus(id, OrderStatus.DELIVERED);
+
+        assertEquals(OrderStatus.DELIVERED, orderRepository.findById(id).status);
     }
 
     private Optional<String> waitForKafkaMessage(String topic, Predicate<String> predicate, int timeoutSeconds) {

@@ -11,6 +11,7 @@ CREATE TABLE orders (
     shipping_cost DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
+    version BIGINT NOT NULL DEFAULT 0,
     PRIMARY KEY (id)
 );
 

@@ -39,6 +39,10 @@ public class Order extends PanacheEntity {
     @Column(name = "updated_at", nullable = false)
     public LocalDateTime updatedAt;
 
+    @Version
+    @Column(nullable = false)
+    public Long version;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<OrderItem> items = new ArrayList<>();
 

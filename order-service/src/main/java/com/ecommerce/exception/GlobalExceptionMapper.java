@@ -1,10 +1,12 @@
 package com.ecommerce.exception;
 
+import jakarta.persistence.OptimisticLockException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import org.eclipse.microprofile.faulttolerance.exceptions.TimeoutException;
+import org.hibernate.StaleStateException;
 import org.jboss.logging.Logger;
 
 import java.time.LocalDateTime;
@@ -23,6 +25,15 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
         if (exception instanceof WebApplicationException webEx) {
             LOG.warnf("WebApplicationException:  %s", exception.getMessage());
             return webEx.getResponse();
+        }
+
+        if (isOptimisticLock(exception)) {
+            LOG.warnf("Optimistic lock conflict: %s", exception.getMessage());
+            return buildErrorResponse(
+                    Response.Status.CONFLICT,
+                    "Conflict",
+                    "The order was modified concurrently. Please reload it and retry."
+            );
         }
 
         if (exception instanceof NoSuchElementException) {
@@ -67,6 +78,15 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
                 "Internal Server Error",
                 "An unexpected error occurred.  Please try again later."
         );
+    }
+
+    private boolean isOptimisticLock(Throwable throwable) {
+        for (Throwable cause = throwable; cause != null; cause = cause.getCause()) {
+            if (cause instanceof OptimisticLockException || cause instanceof StaleStateException) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Response buildErrorResponse(Response.Status status, String error, String message) {
