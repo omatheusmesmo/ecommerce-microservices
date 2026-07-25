@@ -4,6 +4,7 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import org.eclipse.microprofile.faulttolerance.exceptions.TimeoutException;
 import org.jboss.logging.Logger;
 
 import java.time.LocalDateTime;
@@ -48,6 +49,15 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
                     Response.Status.BAD_REQUEST,
                     "Invalid Operation",
                     exception.getMessage()
+            );
+        }
+
+        if (exception instanceof TimeoutException) {
+            LOG.warnf("Request timed out: %s", exception.getMessage());
+            return buildErrorResponse(
+                    Response.Status.SERVICE_UNAVAILABLE,
+                    "Service Unavailable",
+                    "The request timed out. Please try again later."
             );
         }
 
