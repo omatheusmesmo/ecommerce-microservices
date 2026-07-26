@@ -1,6 +1,8 @@
 package com.ecommerce.consumer;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -17,10 +19,17 @@ import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 public class DeadLetterQueueConsumerTest {
+
+    @Inject
+    DeadLetterQueueConsumer consumer;
+
+    @Inject
+    MeterRegistry registry;
 
     private final Logger logger = Logger.getLogger(DeadLetterQueueConsumer.class.getName());
     private final CopyOnWriteArrayList<LogRecord> captured = new CopyOnWriteArrayList<>();
@@ -71,6 +80,16 @@ public class DeadLetterQueueConsumerTest {
 
         assertTrue(waitForLogContaining(marker, 10_000),
                 "Expected DeadLetterQueueConsumer to log the authentication-email DLQ payload");
+    }
+
+    @Test
+    public void onDeadLetterMessage_incrementsDlqCounterBySource() {
+        double before = registry.counter("notification.dlq.messages", "source", "order-events").count();
+
+        consumer.onDeadLetterMessage("payload-" + UUID.randomUUID());
+
+        double after = registry.counter("notification.dlq.messages", "source", "order-events").count();
+        assertEquals(before + 1, after);
     }
 
     private boolean waitForLogContaining(String marker, long timeoutMillis) {

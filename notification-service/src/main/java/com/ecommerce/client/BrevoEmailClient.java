@@ -15,6 +15,7 @@ import org.jboss.logging.Logger;
 
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @ApplicationScoped
 public class BrevoEmailClient {
@@ -31,6 +32,10 @@ public class BrevoEmailClient {
     boolean enabled;
 
     private final Client client = ClientBuilder.newClient();
+    private final Client probeClient = ClientBuilder.newBuilder()
+            .connectTimeout(3, TimeUnit.SECONDS)
+            .readTimeout(3, TimeUnit.SECONDS)
+            .build();
 
     @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     @CircuitBreaker(requestVolumeThreshold = 4, failureRatio = 0.5, delay = 10, delayUnit = ChronoUnit.SECONDS)
@@ -74,6 +79,24 @@ public class BrevoEmailClient {
          LOG.errorf(e, "Failed to send e-mail via Brevo: %s", e.getMessage());
          return null;
      }
+    }
+
+    public ReachabilityStatus checkReachability() {
+        if (!enabled || apiKey.isEmpty() || apiKey.get().isBlank()) {
+            return ReachabilityStatus.DISABLED;
+        }
+        try {
+            Response response = probeClient.target(apiUrl + "/account")
+                    .request(MediaType.APPLICATION_JSON)
+                    .header("api-key", apiKey.get())
+                    .get();
+            int status = response.getStatus();
+            response.close();
+            return status == 200 ? ReachabilityStatus.REACHABLE : ReachabilityStatus.UNREACHABLE;
+        } catch (Exception e) {
+            LOG.debugf("Brevo reachability probe failed: %s", e.getMessage());
+            return ReachabilityStatus.UNREACHABLE;
+        }
     }
 
     public boolean isConfigured() {

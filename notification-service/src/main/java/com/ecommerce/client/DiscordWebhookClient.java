@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @ApplicationScoped
 public class DiscordWebhookClient {
@@ -29,6 +30,10 @@ public class DiscordWebhookClient {
     boolean enabled;
 
     private final Client client = ClientBuilder.newClient();
+    private final Client probeClient = ClientBuilder.newBuilder()
+            .connectTimeout(3, TimeUnit.SECONDS)
+            .readTimeout(3, TimeUnit.SECONDS)
+            .build();
 
     @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     @CircuitBreaker(requestVolumeThreshold = 4, failureRatio = 0.5, delay = 10, delayUnit = ChronoUnit.SECONDS)
@@ -95,6 +100,21 @@ public class DiscordWebhookClient {
             response.close();
         } catch (Exception e) {
             LOG.errorf(e, "Failed to send Discord rich message: %s - error: %s", title, e.getMessage());
+        }
+    }
+
+    public ReachabilityStatus checkReachability() {
+        if (!enabled || webhookUrl.isEmpty() || webhookUrl.get().isBlank()) {
+            return ReachabilityStatus.DISABLED;
+        }
+        try {
+            Response response = probeClient.target(webhookUrl.get()).request().get();
+            int status = response.getStatus();
+            response.close();
+            return status == 200 ? ReachabilityStatus.REACHABLE : ReachabilityStatus.UNREACHABLE;
+        } catch (Exception e) {
+            LOG.debugf("Discord reachability probe failed: %s", e.getMessage());
+            return ReachabilityStatus.UNREACHABLE;
         }
     }
 
