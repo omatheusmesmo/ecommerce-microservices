@@ -24,6 +24,7 @@
     <skipITs>true</skipITs>
     <surefire-plugin.version>3.5.6</surefire-plugin.version>
     <jackson.version>2.22.1</jackson.version>
+    <quarkus-http-problem.version>3.33.2</quarkus-http-problem.version>
   </properties>
 
   <dependencyManagement>
@@ -42,6 +43,12 @@
         <version>${quarkus.platform.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <!-- Not on the Quarkus Platform BOM, so the version has to be pinned here -->
+      <dependency>
+        <groupId>io.quarkiverse.httpproblem</groupId>
+        <artifactId>quarkus-http-problem</artifactId>
+        <version>${quarkus-http-problem.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -36,7 +36,11 @@ class ProductReadRateLimitFilterTest {
                 .get("/products")
                 .then()
                 .statusCode(429)
-                .body("message", equalTo("Too many requests, try again later"));
+                .contentType("application/problem+json")
+                .body("status", equalTo(429))
+                .body("title", equalTo("Too Many Requests"))
+                .body("detail", equalTo("Too many requests, try again later."))
+                .body("instance", equalTo("/products"));
     }
 
     @Test

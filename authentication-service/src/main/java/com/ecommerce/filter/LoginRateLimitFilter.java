@@ -2,9 +2,9 @@ package com.ecommerce.filter;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
+import io.quarkiverse.httpproblem.HttpProblem;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 
@@ -51,9 +51,10 @@ public class LoginRateLimitFilter {
         if (bucket.tryConsume(1)) {
             return null;
         }
-        return Response.status(429)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(Map.of("message", "Too many requests, try again later"))
+        throw HttpProblem.builder()
+                .withStatus(Response.Status.TOO_MANY_REQUESTS)
+                .withTitle("Too Many Requests")
+                .withDetail("Too many requests, try again later.")
                 .build();
     }
 

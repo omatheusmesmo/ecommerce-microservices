@@ -13,6 +13,7 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Path("/products")
 @Produces(MediaType.APPLICATION_JSON)
@@ -37,7 +38,7 @@ public class ProductResource {
         Product product = productService.findById(id);
         if (product == null) {
             LOG.warnf("Product %s not found", id);
-            return Response.status(Response.Status.NOT_FOUND).build();
+            throw new NoSuchElementException("Product " + id + " was not found");
         }
         return Response.ok(product).build();
     }
@@ -74,7 +75,7 @@ public class ProductResource {
         LOG.infof("PUT /products/%s - Updating product", id);
         Product updated = productService.update(id, product);
         if (updated == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            throw new NoSuchElementException("Product " + id + " was not found");
         }
         return Response.ok(updated).build();
     }

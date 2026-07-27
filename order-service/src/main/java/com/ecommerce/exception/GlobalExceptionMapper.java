@@ -1,83 +1,50 @@
 package com.ecommerce.exception;
 
+import io.quarkiverse.httpproblem.ExceptionMapperBase;
+import io.quarkiverse.httpproblem.HttpProblem;
 import jakarta.persistence.OptimisticLockException;
-import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import org.eclipse.microprofile.faulttolerance.exceptions.TimeoutException;
 import org.hibernate.StaleStateException;
-import org.jboss.logging.Logger;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.NoSuchElementException;
 
 @Provider
-public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
-
-    private static final Logger LOG = Logger.getLogger(GlobalExceptionMapper.class);
+public class GlobalExceptionMapper extends ExceptionMapperBase<RuntimeException>
+        implements ExceptionMapper<RuntimeException> {
 
     @Override
-    public Response toResponse(Exception exception) {
-
-        if (exception instanceof WebApplicationException webEx) {
-            LOG.warnf("WebApplicationException:  %s", exception.getMessage());
-            return webEx.getResponse();
-        }
+    protected HttpProblem toProblem(RuntimeException exception) {
 
         if (isOptimisticLock(exception)) {
-            LOG.warnf("Optimistic lock conflict: %s", exception.getMessage());
-            return buildErrorResponse(
-                    Response.Status.CONFLICT,
-                    "Conflict",
-                    "The order was modified concurrently. Please reload it and retry."
-            );
+            return problem(Response.Status.CONFLICT, "Conflict",
+                    "The order was modified concurrently. Please reload it and retry.");
         }
 
         if (exception instanceof NoSuchElementException) {
-            LOG.warnf("Resource not found: %s", exception. getMessage());
-            return buildErrorResponse(
-                    Response.Status. NOT_FOUND,
-                    "Resource Not Found",
-                    exception.getMessage() != null ? exception.getMessage() : "The requested resource was not found"
-            );
+            return problem(Response.Status.NOT_FOUND, "Resource Not Found",
+                    detailOr(exception, "The requested resource was not found."));
         }
 
         if (exception instanceof IllegalArgumentException) {
-            LOG.warnf("Bad request: %s", exception.getMessage());
-            return buildErrorResponse(
-                    Response.Status.BAD_REQUEST,
-                    "Bad Request",
-                    exception.getMessage()
-            );
+            return problem(Response.Status.BAD_REQUEST, "Bad Request",
+                    detailOr(exception, "The request could not be processed."));
         }
 
         if (exception instanceof IllegalStateException) {
-            LOG.warnf("Invalid operation: %s", exception. getMessage());
-            return buildErrorResponse(
-                    Response.Status.BAD_REQUEST,
-                    "Invalid Operation",
-                    exception.getMessage()
-            );
+            return problem(Response.Status.BAD_REQUEST, "Invalid Operation",
+                    detailOr(exception, "The requested operation is not valid in the current state."));
         }
 
         if (exception instanceof TimeoutException) {
-            LOG.warnf("Operation timed out: %s", exception.getMessage());
-            return buildErrorResponse(
-                    Response.Status.SERVICE_UNAVAILABLE,
-                    "Service Unavailable",
-                    "The request timed out. Please retry shortly."
-            );
+            return problem(Response.Status.SERVICE_UNAVAILABLE, "Service Unavailable",
+                    "The request timed out. Please retry shortly.");
         }
 
-        LOG.errorf(exception, "Unexpected error occurred");
-        return buildErrorResponse(
-                Response.Status.INTERNAL_SERVER_ERROR,
-                "Internal Server Error",
-                "An unexpected error occurred.  Please try again later."
-        );
+        return problem(Response.Status.INTERNAL_SERVER_ERROR, "Internal Server Error",
+                "An unexpected error occurred. Please try again later.");
     }
 
     private boolean isOptimisticLock(Throwable throwable) {
@@ -89,16 +56,16 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
         return false;
     }
 
-    private Response buildErrorResponse(Response.Status status, String error, String message) {
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("error", error);
-        errorResponse.put("message", message);
-        errorResponse.put("timestamp", LocalDateTime.now());
-        errorResponse.put("status", status. getStatusCode());
-
-        return Response
-                .status(status)
-                .entity(errorResponse)
+    private HttpProblem problem(Response.Status status, String title, String detail) {
+        return HttpProblem.builder()
+                .withStatus(status)
+                .withTitle(title)
+                .withDetail(detail)
                 .build();
+    }
+
+    private String detailOr(RuntimeException exception, String fallback) {
+        String message = exception.getMessage();
+        return message != null && !message.isBlank() ? message : fallback;
     }
 }
