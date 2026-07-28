@@ -64,14 +64,14 @@ public class OrderEventConsumer {
 
     private void handleOrderCreated(OrderCreatedEvent event) {
         LOG.infof("[KAFKA] Processing OrderCreated event: orderId=%d, customer=%s, total=R$%.2f",
-                event.orderId(), event.customerName(), event.totalAmount());
+                event.orderId(), event.customerName(), event.totalAmount().amount());
 
         try {
             notificationService.notifyOrderCreated(
                     event.orderId(),
                     event.customerEmail(),
                     event.customerName(),
-                    event.totalAmount()
+                    event.totalAmount().amount()
             );
         } catch (Exception e) {
             LOG.errorf(e, "[KAFKA] Failed to process OrderCreated event: orderId=%d", event.orderId());

@@ -51,16 +51,16 @@ public class OrderEventConsumerTest {
                 "productId", marker,
                 "productName", "Test Product",
                 "quantity", 1,
-                "unitPrice", new BigDecimal("10.00"),
-                "subtotal", new BigDecimal("10.00")
+                "unitPrice", money("10.00"),
+                "subtotal", money("10.00")
         );
         Map<String, Object> event = Map.of(
                 "orderId", 1,
                 "customerName", "Customer",
                 "customerEmail", "customer@example.com",
                 "status", "CONFIRMED",
-                "totalAmount", new BigDecimal("10.00"),
-                "shippingCost", new BigDecimal("0.00"),
+                "totalAmount", money("10.00"),
+                "shippingCost", money("0.00"),
                 "items", List.of(item),
                 "createdAt", LocalDateTime.now().toString()
         );
@@ -100,16 +100,16 @@ public class OrderEventConsumerTest {
                 "productId", marker,
                 "productName", "Test Product",
                 "quantity", 1,
-                "unitPrice", new BigDecimal("10.00"),
-                "subtotal", new BigDecimal("10.00")
+                "unitPrice", money("10.00"),
+                "subtotal", money("10.00")
         );
         Map<String, Object> event = Map.of(
                 "orderId", 2,
                 "customerName", "Customer",
                 "customerEmail", "customer@example.com",
                 "status", "CONFIRMED",
-                "totalAmount", new BigDecimal("10.00"),
-                "shippingCost", new BigDecimal("0.00"),
+                "totalAmount", money("10.00"),
+                "shippingCost", money("0.00"),
                 "items", List.of(item),
                 "createdAt", LocalDateTime.now().toString()
         );
@@ -136,6 +136,10 @@ public class OrderEventConsumerTest {
 
         assertTrue(waitForDlqMessage(marker, 30_000),
                 "A well-formed but unrecognized event shape should be routed to the DLQ");
+    }
+
+    private Map<String, Object> money(String amount) {
+        return Map.of("amount", new BigDecimal(amount), "currency", "BRL");
     }
 
     private boolean waitForDlqMessage(String marker, long timeoutMillis) {
