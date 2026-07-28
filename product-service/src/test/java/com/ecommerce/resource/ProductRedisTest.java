@@ -1,6 +1,7 @@
 package com.ecommerce.resource;
 
 import com.ecommerce.entity.Product;
+import com.ecommerce.valueobject.Money;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CompositeCacheKey;
@@ -50,7 +51,7 @@ public class ProductRedisTest {
         Cache categoryCache = cacheManager.getCache("products-by-category").orElseThrow();
         Cache activeCache = cacheManager.getCache("products-active").orElseThrow();
 
-        Product product = new Product("New Product", "Description", new BigDecimal("100.00"),5,"Test category");
+        Product product = new Product("New Product", "Description", new Money(new BigDecimal("100.00"), "BRL"),5,"Test category");
         given()
                 .body(product)
                 .contentType(ContentType.JSON)
@@ -70,7 +71,7 @@ public class ProductRedisTest {
     @Test
     @TestSecurity(user = "seller", roles = "SELLER")
     public void cacheInvalidatedAfterUpdate() {
-        Product product = new Product("Original Product", "Description", new BigDecimal("100.00"),5,"Test category");
+        Product product = new Product("Original Product", "Description", new Money(new BigDecimal("100.00"), "BRL"),5,"Test category");
         String id = given()
                 .body(product)
                 .contentType(ContentType.JSON)
@@ -90,7 +91,7 @@ public class ProductRedisTest {
         Cache categoryCache = cacheManager.getCache("products-by-category").orElseThrow();
         Cache activeCache = cacheManager.getCache("products-active").orElseThrow();
 
-        Product updatedProduct = new Product("Updated Product", "Updated Description", new BigDecimal("150.00"),10,"description");
+        Product updatedProduct = new Product("Updated Product", "Updated Description", new Money(new BigDecimal("150.00"), "BRL"),10,"description");
         given()
                 .body(updatedProduct)
                 .contentType(ContentType.JSON)
@@ -110,7 +111,7 @@ public class ProductRedisTest {
     @Test
     @TestSecurity(user = "admin", roles = "ADMIN")
     public void cacheInvalidatedAfterDelete() {
-        Product product = new Product("Delete Product", "Description", new BigDecimal("100.00"),5,"Test category");
+        Product product = new Product("Delete Product", "Description", new Money(new BigDecimal("100.00"), "BRL"),5,"Test category");
         String id = given()
                 .body(product)
                 .contentType(ContentType.JSON)

@@ -1,6 +1,7 @@
 package com.ecommerce.resource;
 
 import com.ecommerce.entity.Product;
+import com.ecommerce.valueobject.Money;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -19,7 +20,7 @@ class ProductResourceTest {
     @Test
     @TestSecurity(user = "admin", roles = "ADMIN")
     public void create_returnsCreated_and_persists() {
-        Product product = new Product("Gaming Chair", "A comfortable chair", new BigDecimal("850.00"), 10, "Furniture");
+        Product product = new Product("Gaming Chair", "A comfortable chair", new Money(new BigDecimal("850.00"), "BRL"), 10, "Furniture");
 
         given()
                 .body(product)
@@ -83,7 +84,7 @@ class ProductResourceTest {
     @Test
     @TestSecurity(user = "admin", roles = "ADMIN")
     public void findById_returnsProduct_whenExists() {
-        Product product = new Product("Test Product", "Description", new BigDecimal("100.00"), 5, "Test");
+        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("100.00"), "BRL"), 5, "Test");
         String id = given()
                 .body(product)
                 .contentType(ContentType.JSON)
@@ -144,7 +145,7 @@ class ProductResourceTest {
     @Test
     @TestSecurity(user = "seller", roles = "SELLER")
     public void update_returnsUpdated_whenExists() {
-        Product product = new Product("Old Name", "Description", new BigDecimal("100.00"), 5, "Test");
+        Product product = new Product("Old Name", "Description", new Money(new BigDecimal("100.00"), "BRL"), 5, "Test");
         String id = given()
                 .body(product)
                 .contentType(ContentType.JSON)
@@ -154,7 +155,7 @@ class ProductResourceTest {
                 .statusCode(201)
                 .extract().path("id");
 
-        Product updatedProduct = new Product("New Name", "Updated Description", new BigDecimal("150.00"), 10, "Updated");
+        Product updatedProduct = new Product("New Name", "Updated Description", new Money(new BigDecimal("150.00"), "BRL"), 10, "Updated");
 
         given()
                 .body(updatedProduct)
@@ -169,7 +170,7 @@ class ProductResourceTest {
     @Test
     @TestSecurity(user = "seller", roles = "SELLER")
     public void update_returnsNotFound_whenNotExists() {
-        Product updatedProduct = new Product("Name", "Description", new BigDecimal("100.00"), 5, "Test");
+        Product updatedProduct = new Product("Name", "Description", new Money(new BigDecimal("100.00"), "BRL"), 5, "Test");
 
         given()
                 .body(updatedProduct)
@@ -183,7 +184,7 @@ class ProductResourceTest {
     @Test
     @TestSecurity(user = "seller", roles = "SELLER")
     public void update_malformedId_returnsBadRequest() {
-        Product updatedProduct = new Product("Name", "Description", new BigDecimal("100.00"), 5, "Test");
+        Product updatedProduct = new Product("Name", "Description", new Money(new BigDecimal("100.00"), "BRL"), 5, "Test");
 
         given()
                 .body(updatedProduct)
@@ -207,7 +208,7 @@ class ProductResourceTest {
     @Test
     @TestSecurity(user = "admin", roles = "ADMIN")
     public void delete_returnsNoContent_whenExists() {
-        Product product = new Product("To Delete", "Description", new BigDecimal("100.00"), 5, "Test");
+        Product product = new Product("To Delete", "Description", new Money(new BigDecimal("100.00"), "BRL"), 5, "Test");
         String id = given()
                 .body(product)
                 .contentType(ContentType.JSON)

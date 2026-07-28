@@ -1,6 +1,7 @@
 package com.ecommerce.service;
 
 import com.ecommerce.entity.Product;
+import com.ecommerce.valueobject.Money;
 import com.ecommerce.messaging.ProductEventProducer;
 import com.ecommerce.repository.ProductRepository;
 import io.quarkus.test.InjectMock;
@@ -38,9 +39,9 @@ class ProductServiceUnitTest {
 
     @Test
     void findAll_returnsList(){
-        Product p1 = new Product("A", "a", new BigDecimal("1.0"), 5, "cat");
+        Product p1 = new Product("A", "a", new Money(new BigDecimal("1.0"), "BRL"), 5, "cat");
         p1.id = new ObjectId();
-        Product p2 = new Product("B", "b", new BigDecimal("2.0"), 3, "cat");
+        Product p2 = new Product("B", "b", new Money(new BigDecimal("2.0"), "BRL"), 3, "cat");
         p2.id = new ObjectId();
         when(productRepository.findAll(0, 20)).thenReturn(List.of(p1, p2));
 
@@ -54,7 +55,7 @@ class ProductServiceUnitTest {
     @Test
     void findById_found_and_notFound(){
         String id = new ObjectId().toString();
-        Product product = new Product("X", "desc", new BigDecimal("1.0"), 2, "c");
+        Product product = new Product("X", "desc", new Money(new BigDecimal("1.0"), "BRL"), 2, "c");
         product.id = new ObjectId(id);
         when(productRepository.findById(new ObjectId(id))).thenReturn(product);
 
@@ -73,7 +74,7 @@ class ProductServiceUnitTest {
 
     @Test
     void findByCategory_and_findActiveProducts(){
-        Product p = new Product("C", "d", new BigDecimal("3.0"), 1, "cat");
+        Product p = new Product("C", "d", new Money(new BigDecimal("3.0"), "BRL"), 1, "cat");
         p.id = new ObjectId();
 
         when(productRepository.findByCategory("cat", 0, 20)).thenReturn(List.of(p));
@@ -85,7 +86,7 @@ class ProductServiceUnitTest {
 
     @Test
     void create_publishesProductCreated_and_persists(){
-        Product in = new Product("New", "n", new BigDecimal("4.0"), 10, "c");
+        Product in = new Product("New", "n", new Money(new BigDecimal("4.0"), "BRL"), 10, "c");
         in.id = new ObjectId();
         doNothing().when(productRepository).persist(in);
 
@@ -112,11 +113,11 @@ class ProductServiceUnitTest {
     @Test
     void update_changesStock_and_publishesEvents(){
         String id = new ObjectId().toString();
-        Product existing = new Product("E", "d", new BigDecimal("5.0"), 10, "c");
+        Product existing = new Product("E", "d", new Money(new BigDecimal("5.0"), "BRL"), 10, "c");
         existing.id = new ObjectId(id);
         existing.updatedAt = LocalDateTime.now().minusDays(1);
 
-        Product payload = new Product("E", "d", new BigDecimal("5.0"), 8, "c");
+        Product payload = new Product("E", "d", new Money(new BigDecimal("5.0"), "BRL"), 8, "c");
 
         when(productRepository.findById(new ObjectId(id))).thenReturn(existing);
         doNothing().when(productRepository).update(any(Product.class));
@@ -136,7 +137,7 @@ class ProductServiceUnitTest {
         assertFalse(productService.delete(id));
         verify(eventProducer,  never()).publishProductDeleted(any());
 
-        Product product = new Product("D", "d", new BigDecimal("6.0"), 10, "c");
+        Product product = new Product("D", "d", new Money(new BigDecimal("6.0"), "BRL"), 10, "c");
         product.id = new ObjectId(id);
         when(productRepository.findById(new ObjectId(id))).thenReturn(product);
         when(productRepository.deleteById(new ObjectId(id))).thenReturn(true);
@@ -152,7 +153,7 @@ class ProductServiceUnitTest {
         int quantity = 2;
 
         Product updated = new Product("Test Product", "A test product",
-                new BigDecimal("10.00"), 8, "Test Category");
+                new Money(new BigDecimal("10.00"), "BRL"), 8, "Test Category");
         updated.id = new ObjectId(productId);
 
         when(productRepository.decreaseStock(productId, quantity)).thenReturn(1L);
@@ -182,7 +183,7 @@ class ProductServiceUnitTest {
         String id = new ObjectId().toString();
         int quantity = 2;
 
-        Product updated = new Product("Retry", "r", new BigDecimal("2.0"),8, "c");
+        Product updated = new Product("Retry", "r", new Money(new BigDecimal("2.0"), "BRL"),8, "c");
         updated.id = new ObjectId(id);
         when(productRepository.findById(new ObjectId(id))).thenReturn(updated);
 
@@ -219,7 +220,7 @@ class ProductServiceUnitTest {
         String id = new ObjectId().toString();
         int quantity = 3;
 
-        Product updated = new Product("Inc","i", new BigDecimal("6.0"),15, "c");
+        Product updated = new Product("Inc","i", new Money(new BigDecimal("6.0"), "BRL"),15, "c");
         updated.id = new ObjectId(id);
 
         when(productRepository.increaseStock(id, quantity)).thenReturn(1L);

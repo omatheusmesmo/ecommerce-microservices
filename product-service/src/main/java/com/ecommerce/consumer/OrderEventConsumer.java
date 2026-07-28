@@ -95,7 +95,7 @@ public class OrderEventConsumer {
     }
 
     private void handleOrderCreated(OrderCreatedEvent event) {
-        LOG.infof("[KAFKA] Processing OrderCreated event: orderId=%d, customer=%s, total=R$%.2f",
+        LOG.infof("[KAFKA] Processing OrderCreated event: orderId=%d, customer=%s, total=%s",
                 event.orderId(), event.customerName(), event.totalAmount());
 
         for (var item : event.items()) {
@@ -113,7 +113,7 @@ public class OrderEventConsumer {
 
 
     private void handleOrderCancelled(OrderCancelledEvent event) {
-        LOG.infof("[KAFKA] Processing OrderCancelled event: orderId=%d, customer=%s, total=R$%.2f",
+        LOG.infof("[KAFKA] Processing OrderCancelled event: orderId=%d, customer=%s, total=%s",
                 event.orderId(), event.customerName(), event.totalAmount());
 
         for (var item : event.items()) {

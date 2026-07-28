@@ -1,6 +1,7 @@
 package com.ecommerce.consumer;
 
 import com.ecommerce.entity.Product;
+import com.ecommerce.valueobject.Money;
 import com.ecommerce.event.OrderCancelledEvent;
 import com.ecommerce.event.OrderCreatedEvent;
 import com.ecommerce.service.ProductService;
@@ -49,12 +50,12 @@ public class OrderEventConsumerTest {
 
     @Test
     public void consumeOrderCreated_decreasesStock() throws Exception {
-        Product product = new Product("Test Product", "Description", new BigDecimal("100.00"), 10, "Test Category");
+        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("100.00"), "BRL"), 10, "Test Category");
         Product created = productService.create(product);
         String productId = created.id.toString();
 
-        OrderCreatedEvent.OrderItemEvent item = new OrderCreatedEvent.OrderItemEvent(productId, "Test Product", 2, new BigDecimal("100.00"), new BigDecimal("200.00"));
-        OrderCreatedEvent event = new OrderCreatedEvent(1L, "Customer", "customer@example.com", "CONFIRMED", new BigDecimal("200.00"), List.of(item), LocalDateTime.now());
+        OrderCreatedEvent.OrderItemEvent item = new OrderCreatedEvent.OrderItemEvent(productId, "Test Product", 2, new Money(new BigDecimal("100.00"), "BRL"), new Money(new BigDecimal("200.00"), "BRL"));
+        OrderCreatedEvent event = new OrderCreatedEvent(1L, "Customer", "customer@example.com", "CONFIRMED", new Money(new BigDecimal("200.00"), "BRL"), List.of(item), LocalDateTime.now());
         String eventJson = objectMapper.writeValueAsString(event);
 
         try (KafkaProducer<String, String> producer = createProducer()) {
@@ -69,12 +70,12 @@ public class OrderEventConsumerTest {
 
     @Test
     public void consumeOrderCancelled_increasesStock() throws Exception {
-        Product product = new Product("Test Product Cancel", "Description", new BigDecimal("100.00"), 10, "Test Category");
+        Product product = new Product("Test Product Cancel", "Description", new Money(new BigDecimal("100.00"), "BRL"), 10, "Test Category");
         Product created = productService.create(product);
         String productId = created.id.toString();
 
         OrderCancelledEvent.OrderItem item = new OrderCancelledEvent.OrderItem(productId, 3);
-        OrderCancelledEvent event = new OrderCancelledEvent(1L, "Customer", new BigDecimal("300.00"), List.of(item), LocalDateTime.now());
+        OrderCancelledEvent event = new OrderCancelledEvent(1L, "Customer", new Money(new BigDecimal("300.00"), "BRL"), List.of(item), LocalDateTime.now());
         String eventJson = objectMapper.writeValueAsString(event);
 
         try (KafkaProducer<String, String> producer = createProducer()) {
@@ -89,12 +90,12 @@ public class OrderEventConsumerTest {
 
     @Test
     public void onOrderEvent_isIdempotent_whenSameKafkaRecordRedelivered() throws Exception {
-        Product product = new Product("Test Product Idempotent", "Description", new BigDecimal("100.00"), 10, "Test Category");
+        Product product = new Product("Test Product Idempotent", "Description", new Money(new BigDecimal("100.00"), "BRL"), 10, "Test Category");
         Product created = productService.create(product);
         String productId = created.id.toString();
 
-        OrderCreatedEvent.OrderItemEvent item = new OrderCreatedEvent.OrderItemEvent(productId, "Test Product Idempotent", 2, new BigDecimal("100.00"), new BigDecimal("200.00"));
-        OrderCreatedEvent event = new OrderCreatedEvent(999L, "Customer", "customer@example.com", "CONFIRMED", new BigDecimal("200.00"), List.of(item), LocalDateTime.now());
+        OrderCreatedEvent.OrderItemEvent item = new OrderCreatedEvent.OrderItemEvent(productId, "Test Product Idempotent", 2, new Money(new BigDecimal("100.00"), "BRL"), new Money(new BigDecimal("200.00"), "BRL"));
+        OrderCreatedEvent event = new OrderCreatedEvent(999L, "Customer", "customer@example.com", "CONFIRMED", new Money(new BigDecimal("200.00"), "BRL"), List.of(item), LocalDateTime.now());
         String eventJson = objectMapper.writeValueAsString(event);
 
         Message<String> kafkaMessage = toRedeliveredKafkaMessage(eventJson, productId.hashCode());

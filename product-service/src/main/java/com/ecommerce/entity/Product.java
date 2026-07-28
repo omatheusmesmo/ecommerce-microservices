@@ -1,10 +1,11 @@
 package com.ecommerce.entity;
 
+import com.ecommerce.valueobject.Money;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @MongoEntity(collection = "products")
@@ -18,8 +19,8 @@ public class Product extends PanacheMongoEntity {
     public String description;
 
     @NotNull(message = "Price is required")
-    @DecimalMin(value = "0.01", message = "Price must be greater than zero")
-    public BigDecimal price;
+    @Valid
+    public Money price;
 
     @NotNull(message = "Stock is required")
     @Min(value = 0, message = "Stock must be greater than or equal to zero")
@@ -36,7 +37,7 @@ public class Product extends PanacheMongoEntity {
     public Product() {
     }
 
-    public Product(String name, String description, BigDecimal price, Integer stock, String category) {
+    public Product(String name, String description, Money price, Integer stock, String category) {
         this.name = name;
         this.description = description;
         this.price = price;

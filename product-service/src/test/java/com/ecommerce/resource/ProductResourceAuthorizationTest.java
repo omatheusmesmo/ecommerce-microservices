@@ -1,6 +1,7 @@
 package com.ecommerce.resource;
 
 import com.ecommerce.entity.Product;
+import com.ecommerce.valueobject.Money;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -16,7 +17,7 @@ import static io.restassured.RestAssured.given;
 class ProductResourceAuthorizationTest {
 
     private static final Product VALID_PRODUCT =
-            new Product("Gaming Chair", "A comfortable chair", new BigDecimal("850.00"), 10, "Furniture");
+            new Product("Gaming Chair", "A comfortable chair", new Money(new BigDecimal("850.00"), "BRL"), 10, "Furniture");
 
     @Test
     void create_withoutAuth_isRejected() {

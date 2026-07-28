@@ -1,6 +1,7 @@
 package com.ecommerce.consumer;
 
 import com.ecommerce.entity.Product;
+import com.ecommerce.valueobject.Money;
 import com.ecommerce.event.OrderCreatedEvent;
 import com.ecommerce.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,14 +52,14 @@ public class OrderEventDeadLetterQueueTest {
 
     @Test
     public void orderCreatedEvent_insufficientStock_exhaustsRetriesAndRoutesToDeadLetterQueue() throws Exception {
-        Product product = new Product("Low Stock Product", "Description", new BigDecimal("50.00"), 1, "Test Category");
+        Product product = new Product("Low Stock Product", "Description", new Money(new BigDecimal("50.00"), "BRL"), 1, "Test Category");
         Product created = productService.create(product);
         String productId = created.id.toString();
 
         OrderCreatedEvent.OrderItemEvent item = new OrderCreatedEvent.OrderItemEvent(
-                productId, "Low Stock Product", 5, new BigDecimal("50.00"), new BigDecimal("250.00"));
+                productId, "Low Stock Product", 5, new Money(new BigDecimal("50.00"), "BRL"), new Money(new BigDecimal("250.00"), "BRL"));
         OrderCreatedEvent event = new OrderCreatedEvent(
-                42L, "Customer", "customer@example.com", "CONFIRMED", new BigDecimal("250.00"), List.of(item), LocalDateTime.now());
+                42L, "Customer", "customer@example.com", "CONFIRMED", new Money(new BigDecimal("250.00"), "BRL"), List.of(item), LocalDateTime.now());
         String eventJson = objectMapper.writeValueAsString(event);
 
         try (KafkaProducer<String, String> producer = createProducer()) {

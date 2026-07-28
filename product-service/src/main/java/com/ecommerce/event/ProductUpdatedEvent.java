@@ -1,13 +1,14 @@
 package com.ecommerce.event;
 
-import java.math.BigDecimal;
+import com.ecommerce.valueobject.Money;
+
 import java.time.LocalDateTime;
 
 public record ProductUpdatedEvent(
         String productId,
         String name,
         String category,
-        BigDecimal price,
+        Money price,
         Integer stock,
         LocalDateTime updatedAt
 ) {

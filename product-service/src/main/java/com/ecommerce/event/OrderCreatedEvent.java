@@ -1,7 +1,7 @@
 package com.ecommerce.event;
 
+import com.ecommerce.valueobject.Money;
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -11,7 +11,7 @@ public record OrderCreatedEvent(
         String customerName,
         String customerEmail,
         String status,
-        BigDecimal totalAmount,
+        Money totalAmount,
         List<OrderItemEvent> items,
         LocalDateTime createdAt
 ) {
@@ -20,7 +20,7 @@ public record OrderCreatedEvent(
             String productId,
             String productName,
             Integer quantity,
-            BigDecimal unitPrice,
-            BigDecimal subtotal
+            Money unitPrice,
+            Money subtotal
     ) {}
 }
