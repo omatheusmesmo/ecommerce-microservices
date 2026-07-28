@@ -20,7 +20,7 @@ public class GlobalExceptionMapper extends ExceptionMapperBase<RuntimeException>
 
         if (isOptimisticLock(exception)) {
             return problem(Response.Status.CONFLICT, "Conflict",
-                    "The order was modified concurrently. Please reload it and retry.");
+                    "The resource was modified concurrently. Please reload it and retry.");
         }
 
         if (exception instanceof NoSuchElementException) {
