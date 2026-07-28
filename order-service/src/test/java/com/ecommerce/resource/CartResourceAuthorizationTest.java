@@ -3,6 +3,7 @@ package com.ecommerce.resource;
 import com.ecommerce.dto.AddCartItemRequest;
 import com.ecommerce.dto.CreateCartRequest;
 import com.ecommerce.dto.UpdateCartItemRequest;
+import com.ecommerce.valueobject.Money;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -20,7 +21,7 @@ class CartResourceAuthorizationTest {
 
     private static final CreateCartRequest VALID_CART = new CreateCartRequest("jane@example.com");
     private static final AddCartItemRequest VALID_ITEM =
-            new AddCartItemRequest("prod-1", "Gaming Chair", 1, new BigDecimal("850.00"));
+            new AddCartItemRequest("prod-1", "Gaming Chair", 1, new Money(new BigDecimal("850.00"), "BRL"));
 
     @Test
     void createCart_withoutAuth_isRejected() {

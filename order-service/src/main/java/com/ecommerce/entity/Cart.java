@@ -1,9 +1,9 @@
 package com.ecommerce.entity;
 
+import com.ecommerce.valueobject.Money;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,8 +24,10 @@ public class Cart extends PanacheEntity {
     @Column(nullable = false, length = 50)
     public CartStatus status;
 
-    @Column(nullable = false, precision = 10, scale = 2)
-    public BigDecimal totalAmount;
+    @Embedded
+    @AttributeOverride(name = "amount", column = @Column(name = "total_amount", nullable = false, precision = 10, scale = 2))
+    @AttributeOverride(name = "currency", column = @Column(name = "total_currency", nullable = false, length = 3))
+    public Money totalAmount;
 
     @Column(nullable = false, updatable = false)
     public LocalDateTime createdAt;
@@ -42,7 +44,7 @@ public class Cart extends PanacheEntity {
 
     public Cart() {
         this.status = CartStatus.ACTIVE;
-        this.totalAmount = BigDecimal.ZERO;
+        this.totalAmount = Money.zero(Money.DEFAULT_CURRENCY);
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -69,7 +71,8 @@ public class Cart extends PanacheEntity {
     public void calculateTotal() {
         this.totalAmount = items.stream()
                 .map(CartItem::getSubtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(Money::add)
+                .orElse(Money.zero(Money.DEFAULT_CURRENCY));
     }
 
     @PreUpdate

@@ -2,8 +2,8 @@ package com.ecommerce.dto;
 
 import com.ecommerce.entity.Cart;
 import com.ecommerce.entity.CartStatus;
+import com.ecommerce.valueobject.Money;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -11,7 +11,7 @@ public record CartResponse(
         Long id,
         String customerEmail,
         CartStatus status,
-        BigDecimal totalAmount,
+        Money totalAmount,
         List<CartItemResponse> items,
         LocalDateTime createdAt,
         LocalDateTime updatedAt

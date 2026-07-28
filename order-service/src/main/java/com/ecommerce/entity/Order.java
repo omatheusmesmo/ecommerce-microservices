@@ -1,12 +1,12 @@
 package com.ecommerce.entity;
 
-import io.quarkus. hibernate.orm.panache.PanacheEntity;
+import com.ecommerce.valueobject.Money;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util. ArrayList;
-import java.util. List;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "orders")
@@ -27,11 +27,15 @@ public class Order extends PanacheEntity {
     @Column(nullable = false, length = 50)
     public OrderStatus status;
 
-    @Column(nullable = false, precision = 10, scale = 2)
-    public BigDecimal totalAmount;
+    @Embedded
+    @AttributeOverride(name = "amount", column = @Column(name = "total_amount", nullable = false, precision = 10, scale = 2))
+    @AttributeOverride(name = "currency", column = @Column(name = "total_currency", nullable = false, length = 3))
+    public Money totalAmount;
 
-    @Column(nullable = false, precision = 10, scale = 2)
-    public BigDecimal shippingCost;
+    @Embedded
+    @AttributeOverride(name = "amount", column = @Column(name = "shipping_cost", nullable = false, precision = 10, scale = 2))
+    @AttributeOverride(name = "currency", column = @Column(name = "shipping_currency", nullable = false, length = 3))
+    public Money shippingCost;
 
     @Column(nullable = false, updatable = false)
     public LocalDateTime createdAt;
@@ -47,11 +51,11 @@ public class Order extends PanacheEntity {
     private List<OrderItem> items = new ArrayList<>();
 
     public Order() {
-        this.status = OrderStatus. PENDING;
-        this.totalAmount = BigDecimal.ZERO;
-        this.shippingCost = BigDecimal.ZERO;
+        this.status = OrderStatus.PENDING;
+        this.totalAmount = Money.zero(Money.DEFAULT_CURRENCY);
+        this.shippingCost = Money.zero(Money.DEFAULT_CURRENCY);
         this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime. now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public Order(String customerName, String customerEmail) {
@@ -75,14 +79,15 @@ public class Order extends PanacheEntity {
     }
 
     public void calculateTotal() {
-        BigDecimal subtotal = items.stream()
+        Money subtotal = items.stream()
                 .map(OrderItem::getSubtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(Money::add)
+                .orElse(Money.zero(this.shippingCost.currency()));
         this.totalAmount = subtotal.add(this.shippingCost);
     }
 
     @PreUpdate
     public void preUpdate() {
-        this.updatedAt = LocalDateTime. now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

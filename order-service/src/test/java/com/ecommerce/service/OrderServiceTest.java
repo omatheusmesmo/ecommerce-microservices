@@ -7,6 +7,7 @@ import com.ecommerce.entity.Order;
 import com.ecommerce.entity.OrderStatus;
 import com.ecommerce.entity.OutboxEvent;
 import com.ecommerce.repository.OrderRepository;
+import com.ecommerce.valueobject.Money;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -46,8 +47,8 @@ class OrderServiceTest {
         return new CreateOrderRequest(
                 "Jane Doe",
                 "jane@example.com",
-                List.of(new OrderItemRequest("prod-1", "Gaming Chair", 2, new BigDecimal("100.00"))),
-                new BigDecimal("15.00"));
+                List.of(new OrderItemRequest("prod-1", "Gaming Chair", 2, new Money(new BigDecimal("100.00"), "BRL"))),
+                new Money(new BigDecimal("15.00"), "BRL"));
     }
 
     private Long persistOrder(OrderStatus status) {
@@ -65,7 +66,7 @@ class OrderServiceTest {
         OrderResponse response = orderService.createOrder(createOrderRequest());
 
         assertNotNull(response.id());
-        assertEquals(new BigDecimal("215.00"), response.totalAmount());
+        assertEquals(new Money(new BigDecimal("215.00"), "BRL"), response.totalAmount());
         assertTrue(orderRepository.findByIdOptional(response.id()).isPresent());
 
         assertEquals(outboxCountBefore + 1, OutboxEvent.count());
@@ -82,8 +83,8 @@ class OrderServiceTest {
         CreateOrderRequest request = new CreateOrderRequest(
                 "Kafka Flow Test " + marker,
                 "kafka-flow@example.com",
-                List.of(new OrderItemRequest("prod-1", "Gaming Chair", 1, new BigDecimal("50.00"))),
-                new BigDecimal("5.00"));
+                List.of(new OrderItemRequest("prod-1", "Gaming Chair", 1, new Money(new BigDecimal("50.00"), "BRL"))),
+                new Money(new BigDecimal("5.00"), "BRL"));
 
         OrderResponse response = orderService.createOrder(request);
 

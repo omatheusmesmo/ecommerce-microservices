@@ -1,8 +1,8 @@
 package com.ecommerce.dto;
 
+import com.ecommerce.valueobject.Money;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
-
-import java.math.BigDecimal;
 
 public record OrderItemRequest(
 
@@ -18,6 +18,6 @@ public record OrderItemRequest(
         Integer quantity,
 
         @NotNull(message = "Unit price is required")
-        @DecimalMin(value = "0.01", message = "Unit price must be greater than 0")
-        BigDecimal unitPrice
+        @Valid
+        Money unitPrice
 ) {}

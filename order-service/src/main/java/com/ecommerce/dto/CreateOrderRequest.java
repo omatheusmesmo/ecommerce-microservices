@@ -1,14 +1,13 @@
-package com.ecommerce. dto;
+package com.ecommerce.dto;
 
+import com.ecommerce.valueobject.Money;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 public record CreateOrderRequest(
@@ -25,6 +24,6 @@ public record CreateOrderRequest(
         List<@Valid OrderItemRequest> items,
 
         @NotNull(message = "Shipping cost is required")
-        @DecimalMin(value = "0.00", message = "Shipping cost must be 0 or greater")
-        BigDecimal shippingCost
+        @Valid
+        Money shippingCost
 ) {}

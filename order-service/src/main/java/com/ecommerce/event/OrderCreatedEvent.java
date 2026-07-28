@@ -1,8 +1,8 @@
 package com.ecommerce.event;
 
 import com.ecommerce.dto.OrderResponse;
+import com.ecommerce.valueobject.Money;
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,19 +12,19 @@ public record OrderCreatedEvent(
         String customerName,
         String customerEmail,
         String status,
-        BigDecimal totalAmount,
-        BigDecimal shippingCost,
+        Money totalAmount,
+        Money shippingCost,
         List<OrderItemEvent> items,
         LocalDateTime createdAt
 ) {
     public static OrderCreatedEvent from(OrderResponse orderResponse) {
         return new OrderCreatedEvent(
                 orderResponse.id(),
-                orderResponse. customerName(),
-                orderResponse. customerEmail(),
-                orderResponse. status().name(),  // Enum → String
+                orderResponse.customerName(),
+                orderResponse.customerEmail(),
+                orderResponse.status().name(),
                 orderResponse.totalAmount(),
-                orderResponse.shippingCost(), // Assuming shippingCost() method exists in OrderResponse
+                orderResponse.shippingCost(),
                 orderResponse.items().stream()
                         .map(OrderItemEvent::from)
                         .toList(),

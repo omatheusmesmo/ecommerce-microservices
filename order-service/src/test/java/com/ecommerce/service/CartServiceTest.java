@@ -7,6 +7,7 @@ import com.ecommerce.entity.Cart;
 import com.ecommerce.entity.CartItem;
 import com.ecommerce.entity.CartStatus;
 import com.ecommerce.repository.CartRepository;
+import com.ecommerce.valueobject.Money;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -38,7 +39,7 @@ class CartServiceTest {
 
     private Long persistCartWithItem(String productId, int quantity, BigDecimal unitPrice) {
         Cart cart = new Cart("jane@example.com");
-        cart.addItem(new CartItem(productId, "Gaming Chair", quantity, unitPrice));
+        cart.addItem(new CartItem(productId, "Gaming Chair", quantity, new Money(unitPrice, "BRL")));
         cart.calculateTotal();
         cartRepository.persist(cart);
         return cart.id;
@@ -51,7 +52,7 @@ class CartServiceTest {
 
         assertNotNull(response.id());
         assertEquals(CartStatus.ACTIVE, response.status());
-        assertEquals(BigDecimal.ZERO, response.totalAmount());
+        assertEquals(new Money(BigDecimal.ZERO, "BRL"), response.totalAmount());
         assertTrue(response.items().isEmpty());
     }
 
@@ -67,10 +68,10 @@ class CartServiceTest {
         Long cartId = persistCart(CartStatus.ACTIVE);
 
         CartResponse response = cartService.addItem(cartId,
-                new AddCartItemRequest("prod-1", "Gaming Chair", 2, new BigDecimal("100.00")));
+                new AddCartItemRequest("prod-1", "Gaming Chair", 2, new Money(new BigDecimal("100.00"), "BRL")));
 
         assertEquals(1, response.items().size());
-        assertEquals(new BigDecimal("200.00"), response.totalAmount());
+        assertEquals(new Money(new BigDecimal("200.00"), "BRL"), response.totalAmount());
     }
 
     @Test
@@ -78,13 +79,13 @@ class CartServiceTest {
     void addItem_sameProductTwice_mergesQuantityInsteadOfDuplicating() {
         Long cartId = persistCart(CartStatus.ACTIVE);
 
-        cartService.addItem(cartId, new AddCartItemRequest("prod-1", "Gaming Chair", 2, new BigDecimal("100.00")));
+        cartService.addItem(cartId, new AddCartItemRequest("prod-1", "Gaming Chair", 2, new Money(new BigDecimal("100.00"), "BRL")));
         CartResponse response = cartService.addItem(cartId,
-                new AddCartItemRequest("prod-1", "Gaming Chair", 3, new BigDecimal("100.00")));
+                new AddCartItemRequest("prod-1", "Gaming Chair", 3, new Money(new BigDecimal("100.00"), "BRL")));
 
         assertEquals(1, response.items().size());
         assertEquals(5, response.items().get(0).quantity());
-        assertEquals(new BigDecimal("500.00"), response.totalAmount());
+        assertEquals(new Money(new BigDecimal("500.00"), "BRL"), response.totalAmount());
     }
 
     @Test
@@ -93,14 +94,14 @@ class CartServiceTest {
         Long cartId = persistCart(CartStatus.ABANDONED);
 
         assertThrows(IllegalStateException.class, () -> cartService.addItem(cartId,
-                new AddCartItemRequest("prod-1", "Gaming Chair", 1, new BigDecimal("100.00"))));
+                new AddCartItemRequest("prod-1", "Gaming Chair", 1, new Money(new BigDecimal("100.00"), "BRL"))));
     }
 
     @Test
     @TestTransaction
     void addItem_cartNotFound_throwsNoSuchElementException() {
         assertThrows(NoSuchElementException.class, () -> cartService.addItem(Long.MAX_VALUE,
-                new AddCartItemRequest("prod-1", "Gaming Chair", 1, new BigDecimal("100.00"))));
+                new AddCartItemRequest("prod-1", "Gaming Chair", 1, new Money(new BigDecimal("100.00"), "BRL"))));
     }
 
     @Test
@@ -112,7 +113,7 @@ class CartServiceTest {
         CartResponse response = cartService.updateItemQuantity(cartId, itemId, 5);
 
         assertEquals(5, response.items().get(0).quantity());
-        assertEquals(new BigDecimal("500.00"), response.totalAmount());
+        assertEquals(new Money(new BigDecimal("500.00"), "BRL"), response.totalAmount());
     }
 
     @Test
@@ -133,7 +134,7 @@ class CartServiceTest {
         CartResponse response = cartService.removeItem(cartId, itemId);
 
         assertTrue(response.items().isEmpty());
-        assertEquals(BigDecimal.ZERO, response.totalAmount());
+        assertEquals(new Money(BigDecimal.ZERO, "BRL"), response.totalAmount());
     }
 
     @Test

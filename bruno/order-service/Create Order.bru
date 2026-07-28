@@ -14,13 +14,19 @@ body:json {
   {
     "customerName": "John Doe",
     "customerEmail": "user@example.com",
-    "shippingCost": 15.00,
+    "shippingCost": {
+      "amount": 15.00,
+      "currency": "BRL"
+    },
     "items": [
       {
         "productId": "{{productId}}",
         "productName": "Gaming Laptop",
         "quantity": 1,
-        "unitPrice": 1200.00
+        "unitPrice": {
+          "amount": 1200.00,
+          "currency": "BRL"
+        }
       }
     ]
   }

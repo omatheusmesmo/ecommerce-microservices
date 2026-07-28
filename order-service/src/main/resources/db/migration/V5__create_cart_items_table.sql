@@ -6,6 +6,7 @@ CREATE TABLE cart_items (
     product_name VARCHAR(255) NOT NULL,
     quantity INTEGER NOT NULL,
     unit_price DECIMAL(10,2) NOT NULL,
+    unit_price_currency VARCHAR(3) NOT NULL DEFAULT 'BRL',
     cart_id BIGINT NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT fk_cart_items_cart FOREIGN KEY (cart_id)

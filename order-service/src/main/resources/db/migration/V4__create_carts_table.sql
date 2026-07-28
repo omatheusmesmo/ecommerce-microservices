@@ -5,6 +5,7 @@ CREATE TABLE carts (
     customer_email VARCHAR(255) NOT NULL,
     status VARCHAR(50) NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    total_currency VARCHAR(3) NOT NULL DEFAULT 'BRL',
     created_at TIMESTAMP NOT NULL DEFAULT now(),
     updated_at TIMESTAMP NOT NULL DEFAULT now(),
     version BIGINT NOT NULL DEFAULT 0,

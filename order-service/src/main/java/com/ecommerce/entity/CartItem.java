@@ -1,5 +1,6 @@
 package com.ecommerce.entity;
 
+import com.ecommerce.valueobject.Money;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
@@ -23,8 +24,10 @@ public class CartItem extends PanacheEntity {
     @Column(nullable = false)
     public Integer quantity;
 
-    @Column(nullable = false, precision = 10, scale = 2)
-    public BigDecimal unitPrice;
+    @Embedded
+    @AttributeOverride(name = "amount", column = @Column(name = "unit_price", nullable = false, precision = 10, scale = 2))
+    @AttributeOverride(name = "currency", column = @Column(name = "unit_price_currency", nullable = false, length = 3))
+    public Money unitPrice;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cart_id", nullable = false)
@@ -32,14 +35,14 @@ public class CartItem extends PanacheEntity {
 
     public CartItem() {}
 
-    public CartItem(String productId, String productName, Integer quantity, BigDecimal unitPrice) {
+    public CartItem(String productId, String productName, Integer quantity, Money unitPrice) {
         this.productId = productId;
         this.productName = productName;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
     }
 
-    public BigDecimal getSubtotal() {
+    public Money getSubtotal() {
         return unitPrice.multiply(BigDecimal.valueOf(quantity));
     }
 }

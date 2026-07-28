@@ -1,19 +1,19 @@
 package com.ecommerce.dto;
 
-import com.ecommerce.entity. Order;
+import com.ecommerce.entity.Order;
 import com.ecommerce.entity.OrderStatus;
+import com.ecommerce.valueobject.Money;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util. List;
+import java.util.List;
 
 public record OrderResponse(
         Long id,
         String customerName,
         String customerEmail,
         OrderStatus status,
-        BigDecimal totalAmount,
-        BigDecimal shippingCost,
+        Money totalAmount,
+        Money shippingCost,
         List<OrderItemResponse> items,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
@@ -21,7 +21,7 @@ public record OrderResponse(
     public static OrderResponse from(Order order) {
         return new OrderResponse(
                 order.id,
-                order. customerName,
+                order.customerName,
                 order.customerEmail,
                 order.status,
                 order.totalAmount,
@@ -39,7 +39,7 @@ public record OrderResponse(
                 order.id,
                 order.customerName,
                 order.customerEmail,
-                order. status,
+                order.status,
                 order.totalAmount,
                 order.shippingCost,
                 List.of(),

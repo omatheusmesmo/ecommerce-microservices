@@ -1,16 +1,15 @@
 package com.ecommerce.dto;
 
 import com.ecommerce.entity.OrderItem;
-
-import java.math. BigDecimal;
+import com.ecommerce.valueobject.Money;
 
 public record OrderItemResponse(
         Long id,
         String productId,
         String productName,
         Integer quantity,
-        BigDecimal unitPrice,
-        BigDecimal subtotal
+        Money unitPrice,
+        Money subtotal
 ) {
     public static OrderItemResponse from(OrderItem item) {
         return new OrderItemResponse(

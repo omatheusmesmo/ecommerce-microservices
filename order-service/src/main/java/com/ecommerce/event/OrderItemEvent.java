@@ -1,16 +1,16 @@
 package com.ecommerce.event;
 
 import com.ecommerce.dto.OrderItemResponse;
+import com.ecommerce.valueobject.Money;
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import java.math.BigDecimal;
 
 @RegisterForReflection
 public record OrderItemEvent(
         String productId,
         String productName,
         Integer quantity,
-        BigDecimal unitPrice,
-        BigDecimal subtotal
+        Money unitPrice,
+        Money subtotal
 ) {
     public static OrderItemEvent from(OrderItemResponse item) {
         return new OrderItemEvent(

@@ -2,6 +2,7 @@ package com.ecommerce.resource;
 
 import com.ecommerce.dto.CreateOrderRequest;
 import com.ecommerce.dto.OrderItemRequest;
+import com.ecommerce.valueobject.Money;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -21,8 +22,8 @@ class OrderResourceAuthorizationTest {
     private static final CreateOrderRequest VALID_ORDER = new CreateOrderRequest(
             "Jane Doe",
             "jane@example.com",
-            List.of(new OrderItemRequest("prod-1", "Gaming Chair", 1, new BigDecimal("850.00"))),
-            new BigDecimal("15.00")
+            List.of(new OrderItemRequest("prod-1", "Gaming Chair", 1, new Money(new BigDecimal("850.00"), "BRL"))),
+            new Money(new BigDecimal("15.00"), "BRL")
     );
 
     @Test
