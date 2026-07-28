@@ -17,20 +17,20 @@ import java.util.List;
 )
 public class Cart extends PanacheEntity {
 
-    @Column(name = "customer_email", nullable = false)
+    @Column(nullable = false)
     public String customerEmail;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     public CartStatus status;
 
-    @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
+    @Column(nullable = false, precision = 10, scale = 2)
     public BigDecimal totalAmount;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false)
     public LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(nullable = false)
     public LocalDateTime updatedAt;
 
     @Version

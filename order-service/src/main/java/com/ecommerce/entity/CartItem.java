@@ -14,16 +14,16 @@ import java.math.BigDecimal;
 )
 public class CartItem extends PanacheEntity {
 
-    @Column(name = "product_id", nullable = false)
+    @Column(nullable = false)
     public String productId;
 
-    @Column(name = "product_name", nullable = false)
+    @Column(nullable = false)
     public String productName;
 
     @Column(nullable = false)
     public Integer quantity;
 
-    @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
+    @Column(nullable = false, precision = 10, scale = 2)
     public BigDecimal unitPrice;
 
     @ManyToOne(fetch = FetchType.LAZY)
