@@ -1,8 +1,10 @@
 package com.ecommerce.consumer;
 
+import com.ecommerce.entity.Category;
 import com.ecommerce.entity.Product;
 import com.ecommerce.valueobject.Money;
 import com.ecommerce.event.OrderCreatedEvent;
+import com.ecommerce.repository.CategoryRepository;
 import com.ecommerce.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
@@ -36,7 +38,16 @@ public class OrderEventDeadLetterQueueTest {
     ProductService productService;
 
     @Inject
+    CategoryRepository categoryRepository;
+
+    @Inject
     ObjectMapper objectMapper;
+
+    private String newCategoryId() {
+        Category category = new Category("Test Category", null);
+        categoryRepository.persist(category);
+        return category.id.toString();
+    }
 
     @Test
     public void malformedOrderEvent_isRoutedToDeadLetterQueue() {
@@ -52,7 +63,7 @@ public class OrderEventDeadLetterQueueTest {
 
     @Test
     public void orderCreatedEvent_insufficientStock_exhaustsRetriesAndRoutesToDeadLetterQueue() throws Exception {
-        Product product = new Product("Low Stock Product", "Description", new Money(new BigDecimal("50.00"), "BRL"), 1, "Test Category");
+        Product product = new Product("Low Stock Product", "Description", new Money(new BigDecimal("50.00"), "BRL"), 1, newCategoryId());
         Product created = productService.create(product);
         String productId = created.id.toString();
 

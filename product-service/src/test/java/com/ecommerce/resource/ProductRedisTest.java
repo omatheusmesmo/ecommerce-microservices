@@ -1,6 +1,8 @@
 package com.ecommerce.resource;
 
+import com.ecommerce.entity.Category;
 import com.ecommerce.entity.Product;
+import com.ecommerce.repository.CategoryRepository;
 import com.ecommerce.valueobject.Money;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
@@ -22,6 +24,15 @@ public class ProductRedisTest {
 
     @Inject
     CacheManager cacheManager;
+
+    @Inject
+    CategoryRepository categoryRepository;
+
+    private String newCategoryId() {
+        Category category = new Category("Test Category", null);
+        categoryRepository.persist(category);
+        return category.id.toString();
+    }
 
     @Test
     public void findAll_populatesCache() {
@@ -51,7 +62,7 @@ public class ProductRedisTest {
         Cache categoryCache = cacheManager.getCache("products-by-category").orElseThrow();
         Cache activeCache = cacheManager.getCache("products-active").orElseThrow();
 
-        Product product = new Product("New Product", "Description", new Money(new BigDecimal("100.00"), "BRL"),5,"Test category");
+        Product product = new Product("New Product", "Description", new Money(new BigDecimal("100.00"), "BRL"),5,newCategoryId());
         given()
                 .body(product)
                 .contentType(ContentType.JSON)
@@ -71,7 +82,7 @@ public class ProductRedisTest {
     @Test
     @TestSecurity(user = "seller", roles = "SELLER")
     public void cacheInvalidatedAfterUpdate() {
-        Product product = new Product("Original Product", "Description", new Money(new BigDecimal("100.00"), "BRL"),5,"Test category");
+        Product product = new Product("Original Product", "Description", new Money(new BigDecimal("100.00"), "BRL"),5,newCategoryId());
         String id = given()
                 .body(product)
                 .contentType(ContentType.JSON)
@@ -91,7 +102,7 @@ public class ProductRedisTest {
         Cache categoryCache = cacheManager.getCache("products-by-category").orElseThrow();
         Cache activeCache = cacheManager.getCache("products-active").orElseThrow();
 
-        Product updatedProduct = new Product("Updated Product", "Updated Description", new Money(new BigDecimal("150.00"), "BRL"),10,"description");
+        Product updatedProduct = new Product("Updated Product", "Updated Description", new Money(new BigDecimal("150.00"), "BRL"),10,newCategoryId());
         given()
                 .body(updatedProduct)
                 .contentType(ContentType.JSON)
@@ -111,7 +122,7 @@ public class ProductRedisTest {
     @Test
     @TestSecurity(user = "admin", roles = "ADMIN")
     public void cacheInvalidatedAfterDelete() {
-        Product product = new Product("Delete Product", "Description", new Money(new BigDecimal("100.00"), "BRL"),5,"Test category");
+        Product product = new Product("Delete Product", "Description", new Money(new BigDecimal("100.00"), "BRL"),5,newCategoryId());
         String id = given()
                 .body(product)
                 .contentType(ContentType.JSON)

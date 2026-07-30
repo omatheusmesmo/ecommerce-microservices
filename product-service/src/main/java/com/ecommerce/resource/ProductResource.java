@@ -44,12 +44,12 @@ public class ProductResource {
     }
 
     @GET
-    @Path("/category/{category}")
+    @Path("/category/{categoryId}")
     public List<Product> findByCategory(
-            @PathParam("category") String category,
+            @PathParam("categoryId") String categoryId,
             @QueryParam("page") @DefaultValue("0") @Min(0) int page,
             @QueryParam("size") @DefaultValue("20") @Min(1) @Max(100) int size) {
-        return productService.findByCategory(category, page, size);
+        return productService.findByCategory(categoryId, page, size);
     }
 
     @GET

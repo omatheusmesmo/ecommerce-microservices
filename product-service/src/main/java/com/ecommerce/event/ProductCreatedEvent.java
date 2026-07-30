@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 public record ProductCreatedEvent(
         String productId,
         String name,
-        String category,
+        String categoryId,
         Money price,
         Integer stock,
         LocalDateTime createdAt

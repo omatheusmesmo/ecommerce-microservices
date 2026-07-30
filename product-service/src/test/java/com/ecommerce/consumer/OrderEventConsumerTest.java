@@ -1,9 +1,11 @@
 package com.ecommerce.consumer;
 
+import com.ecommerce.entity.Category;
 import com.ecommerce.entity.Product;
 import com.ecommerce.valueobject.Money;
 import com.ecommerce.event.OrderCancelledEvent;
 import com.ecommerce.event.OrderCreatedEvent;
+import com.ecommerce.repository.CategoryRepository;
 import com.ecommerce.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
@@ -35,10 +37,19 @@ public class OrderEventConsumerTest {
     ProductService productService;
 
     @Inject
+    CategoryRepository categoryRepository;
+
+    @Inject
     ObjectMapper objectMapper;
 
     @Inject
     OrderEventConsumer orderEventConsumer;
+
+    private String newCategoryId() {
+        Category category = new Category("Test Category", null);
+        categoryRepository.persist(category);
+        return category.id.toString();
+    }
 
     private KafkaProducer<String, String> createProducer() {
         Properties props = new Properties();
@@ -50,7 +61,7 @@ public class OrderEventConsumerTest {
 
     @Test
     public void consumeOrderCreated_decreasesStock() throws Exception {
-        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("100.00"), "BRL"), 10, "Test Category");
+        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("100.00"), "BRL"), 10, newCategoryId());
         Product created = productService.create(product);
         String productId = created.id.toString();
 
@@ -70,7 +81,7 @@ public class OrderEventConsumerTest {
 
     @Test
     public void consumeOrderCancelled_increasesStock() throws Exception {
-        Product product = new Product("Test Product Cancel", "Description", new Money(new BigDecimal("100.00"), "BRL"), 10, "Test Category");
+        Product product = new Product("Test Product Cancel", "Description", new Money(new BigDecimal("100.00"), "BRL"), 10, newCategoryId());
         Product created = productService.create(product);
         String productId = created.id.toString();
 
@@ -90,7 +101,7 @@ public class OrderEventConsumerTest {
 
     @Test
     public void onOrderEvent_isIdempotent_whenSameKafkaRecordRedelivered() throws Exception {
-        Product product = new Product("Test Product Idempotent", "Description", new Money(new BigDecimal("100.00"), "BRL"), 10, "Test Category");
+        Product product = new Product("Test Product Idempotent", "Description", new Money(new BigDecimal("100.00"), "BRL"), 10, newCategoryId());
         Product created = productService.create(product);
         String productId = created.id.toString();
 

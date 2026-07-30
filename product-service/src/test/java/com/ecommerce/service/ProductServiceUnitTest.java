@@ -1,8 +1,10 @@
 package com.ecommerce.service;
 
+import com.ecommerce.entity.Category;
 import com.ecommerce.entity.Product;
 import com.ecommerce.valueobject.Money;
 import com.ecommerce.messaging.ProductEventProducer;
+import com.ecommerce.repository.CategoryRepository;
 import com.ecommerce.repository.ProductRepository;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -30,11 +32,15 @@ class ProductServiceUnitTest {
     ProductRepository productRepository;
 
     @InjectMock
+    CategoryRepository categoryRepository;
+
+    @InjectMock
     ProductEventProducer eventProducer;
 
     @BeforeEach
     void setUp() {
-        reset(productRepository, eventProducer);
+        reset(productRepository, categoryRepository, eventProducer);
+        when(categoryRepository.findById(any(ObjectId.class))).thenReturn(new Category("Any", null));
     }
 
     @Test
@@ -77,7 +83,7 @@ class ProductServiceUnitTest {
         Product p = new Product("C", "d", new Money(new BigDecimal("3.0"), "BRL"), 1, "cat");
         p.id = new ObjectId();
 
-        when(productRepository.findByCategory("cat", 0, 20)).thenReturn(List.of(p));
+        when(productRepository.findByCategoryId("cat", 0, 20)).thenReturn(List.of(p));
         when(productRepository.findActiveProducts(0, 20)).thenReturn(List.of(p));
 
         assertEquals(1, productService.findByCategory("cat", 0, 20).size());
@@ -86,7 +92,7 @@ class ProductServiceUnitTest {
 
     @Test
     void create_publishesProductCreated_and_persists(){
-        Product in = new Product("New", "n", new Money(new BigDecimal("4.0"), "BRL"), 10, "c");
+        Product in = new Product("New", "n", new Money(new BigDecimal("4.0"), "BRL"), 10, new ObjectId().toString());
         in.id = new ObjectId();
         doNothing().when(productRepository).persist(in);
 
@@ -117,7 +123,7 @@ class ProductServiceUnitTest {
         existing.id = new ObjectId(id);
         existing.updatedAt = LocalDateTime.now().minusDays(1);
 
-        Product payload = new Product("E", "d", new Money(new BigDecimal("5.0"), "BRL"), 8, "c");
+        Product payload = new Product("E", "d", new Money(new BigDecimal("5.0"), "BRL"), 8, new ObjectId().toString());
 
         when(productRepository.findById(new ObjectId(id))).thenReturn(existing);
         doNothing().when(productRepository).update(any(Product.class));

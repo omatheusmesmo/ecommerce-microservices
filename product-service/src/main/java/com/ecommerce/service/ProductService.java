@@ -7,6 +7,7 @@ import com.ecommerce.event.ProductDeletedEvent;
 import com.ecommerce.event.ProductUpdatedEvent;
 import com.ecommerce.event.StockChangedEvent;
 import com.ecommerce.messaging.ProductEventProducer;
+import com.ecommerce.repository.CategoryRepository;
 import com.ecommerce.repository.ProductRepository;
 import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.CacheResult;
@@ -20,6 +21,7 @@ import org.jboss.logging.Logger;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 @ApplicationScoped
@@ -29,6 +31,9 @@ public class ProductService {
 
     @Inject
     ProductRepository productRepository;
+
+    @Inject
+    CategoryRepository categoryRepository;
 
     @Inject
     ProductEventProducer eventProducer;
@@ -49,9 +54,9 @@ public class ProductService {
 
     @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     @CacheResult(cacheName = "products-by-category")
-    public List<Product> findByCategory(String category, int page, int size) {
-        LOG.debugf("Searching products by category: %s (cache miss)", category);
-        return productRepository.findByCategory(category, page, size);
+    public List<Product> findByCategory(String categoryId, int page, int size) {
+        LOG.debugf("Searching products by category: %s (cache miss)", categoryId);
+        return productRepository.findByCategoryId(categoryId, page, size);
     }
 
     @Timeout(value = 5, unit = ChronoUnit.SECONDS)
@@ -66,6 +71,7 @@ public class ProductService {
     @CacheInvalidateAll(cacheName = "products-active")
     public Product create(Product product) {
         LOG.infof("Creating new product: %s", product.name);
+        requireCategoryExists(product.categoryId);
         product.createdAt = LocalDateTime.now();
         product.updatedAt = LocalDateTime.now();
         productRepository.persist(product);
@@ -74,7 +80,7 @@ public class ProductService {
         ProductCreatedEvent event = new ProductCreatedEvent(
                 product.id.toString(),
                 product.name,
-                product.category,
+                product.categoryId,
                 product.price,
                 product.stock,
                 product.createdAt
@@ -97,12 +103,13 @@ public class ProductService {
             return null;
         }
 
+        requireCategoryExists(updatedProduct.categoryId);
         Integer oldStock = existing.stock;
 
         existing.name = updatedProduct.name;
         existing.description = updatedProduct.description;
         existing.price = updatedProduct.price;
-        existing.category = updatedProduct.category;
+        existing.categoryId = updatedProduct.categoryId;
         existing.stock = updatedProduct.stock;
         existing.active = updatedProduct.active;
         existing.updatedAt = LocalDateTime.now();
@@ -113,7 +120,7 @@ public class ProductService {
         ProductUpdatedEvent event = new ProductUpdatedEvent(
                 existing.id.toString(),
                 existing.name,
-                existing.category,
+                existing.categoryId,
                 existing.price,
                 existing.stock,
                 existing.updatedAt
@@ -213,5 +220,11 @@ public class ProductService {
         );
         eventProducer.publishStockChanged(event);
         LOG.infof("Stock increased atomically for product %s: +%d", productId, quantity);
+    }
+
+    private void requireCategoryExists(String categoryId) {
+        if (categoryRepository.findById(new ObjectId(categoryId)) == null) {
+            throw new NoSuchElementException("Category " + categoryId + " was not found");
+        }
     }
 }

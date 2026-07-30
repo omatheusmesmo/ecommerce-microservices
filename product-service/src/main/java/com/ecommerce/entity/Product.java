@@ -27,8 +27,7 @@ public class Product extends PanacheMongoEntity {
     public Integer stock;
 
     @NotBlank(message = "Category is required")
-    @Size(min = 2, max = 50, message = "Category must be between 2 and 50 characters")
-    public String category;
+    public String categoryId;
 
     public Boolean active = true;
     public LocalDateTime createdAt = LocalDateTime.now();
@@ -37,11 +36,11 @@ public class Product extends PanacheMongoEntity {
     public Product() {
     }
 
-    public Product(String name, String description, Money price, Integer stock, String category) {
+    public Product(String name, String description, Money price, Integer stock, String categoryId) {
         this.name = name;
         this.description = description;
         this.price = price;
         this.stock = stock;
-        this.category = category;
+        this.categoryId = categoryId;
     }
 }

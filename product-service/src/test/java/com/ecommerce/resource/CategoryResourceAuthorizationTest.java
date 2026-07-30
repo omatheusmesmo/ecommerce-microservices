@@ -1,41 +1,24 @@
 package com.ecommerce.resource;
 
 import com.ecommerce.entity.Category;
-import com.ecommerce.entity.Product;
-import com.ecommerce.repository.CategoryRepository;
-import com.ecommerce.valueobject.Money;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
-import jakarta.inject.Inject;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.math.BigDecimal;
 
 import static io.restassured.RestAssured.given;
 
 @QuarkusTest
-@TestHTTPEndpoint(ProductResource.class)
-class ProductResourceAuthorizationTest {
+@TestHTTPEndpoint(CategoryResource.class)
+class CategoryResourceAuthorizationTest {
 
-    @Inject
-    CategoryRepository categoryRepository;
-
-    private Product validProduct;
-
-    @BeforeEach
-    void setUp() {
-        Category category = new Category("Furniture", null);
-        categoryRepository.persist(category);
-        validProduct = new Product("Gaming Chair", "A comfortable chair", new Money(new BigDecimal("850.00"), "BRL"), 10, category.id.toString());
-    }
+    private static final Category VALID_CATEGORY = new Category("Electronics", null);
 
     @Test
     void create_withoutAuth_isRejected() {
         given()
-                .body(validProduct)
+                .body(VALID_CATEGORY)
                 .contentType(ContentType.JSON)
                 .when().post()
                 .then().statusCode(401);
@@ -45,7 +28,7 @@ class ProductResourceAuthorizationTest {
     @TestSecurity(user = "customer1", roles = "CUSTOMER")
     void create_asCustomer_isForbidden() {
         given()
-                .body(validProduct)
+                .body(VALID_CATEGORY)
                 .contentType(ContentType.JSON)
                 .when().post()
                 .then().statusCode(403);
@@ -55,7 +38,7 @@ class ProductResourceAuthorizationTest {
     @TestSecurity(user = "seller1", roles = "SELLER")
     void create_asSeller_isAllowed() {
         given()
-                .body(validProduct)
+                .body(VALID_CATEGORY)
                 .contentType(ContentType.JSON)
                 .when().post()
                 .then().statusCode(201);
@@ -64,7 +47,7 @@ class ProductResourceAuthorizationTest {
     @Test
     void update_withoutAuth_isRejected() {
         given()
-                .body(validProduct)
+                .body(VALID_CATEGORY)
                 .contentType(ContentType.JSON)
                 .when().put("/000000000000000000000000")
                 .then().statusCode(401);
@@ -74,7 +57,7 @@ class ProductResourceAuthorizationTest {
     @TestSecurity(user = "customer1", roles = "CUSTOMER")
     void update_asCustomer_isForbidden() {
         given()
-                .body(validProduct)
+                .body(VALID_CATEGORY)
                 .contentType(ContentType.JSON)
                 .when().put("/000000000000000000000000")
                 .then().statusCode(403);

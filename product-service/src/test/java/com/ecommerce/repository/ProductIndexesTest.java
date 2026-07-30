@@ -24,7 +24,7 @@ class ProductIndexesTest {
             indexedFields.addAll(key.keySet());
         }
 
-        assertTrue(indexedFields.contains("category"), "expected an index covering 'category'");
+        assertTrue(indexedFields.contains("categoryId"), "expected an index covering 'categoryId'");
         assertTrue(indexedFields.contains("active"), "expected an index covering 'active'");
     }
 }

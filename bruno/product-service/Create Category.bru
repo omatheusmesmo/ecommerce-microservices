@@ -1,0 +1,26 @@
+meta {
+  name: Create Category (Admin-Seller)
+  type: http
+  seq: 0
+}
+
+post {
+  url: http://localhost:8082/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Electronics",
+    "parentId": null
+  }
+}
+
+vars:post-response {
+  categoryId: res.body.id
+}

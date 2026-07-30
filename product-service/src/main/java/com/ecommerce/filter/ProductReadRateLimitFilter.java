@@ -18,7 +18,7 @@ import java.util.Map.Entry;
 
 /**
  * Per-IP rate limiting for the public, unbounded product read endpoints
- * (GET /products, /products/active, /products/category/{category}) - without this
+ * (GET /products, /products/active, /products/category/{categoryId}) - without this
  * they are open to unlimited catalog scraping, each call returning a full result page.
  */
 @ApplicationScoped

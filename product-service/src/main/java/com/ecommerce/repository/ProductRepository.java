@@ -19,8 +19,8 @@ public class ProductRepository implements PanacheMongoRepository<Product> {
         return findAll().page(Page.of(page, size)).list();
     }
 
-    public List<Product> findByCategory(String category, int page, int size){
-        return find("category", category).page(Page.of(page, size)).list();
+    public List<Product> findByCategoryId(String categoryId, int page, int size){
+        return find("categoryId", categoryId).page(Page.of(page, size)).list();
     }
 
     public List<Product> findActiveProducts(int page, int size){

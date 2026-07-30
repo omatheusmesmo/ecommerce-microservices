@@ -1,11 +1,13 @@
 package com.ecommerce.messaging;
 
+import com.ecommerce.entity.Category;
 import com.ecommerce.entity.Product;
 import com.ecommerce.valueobject.Money;
 import com.ecommerce.event.ProductCreatedEvent;
 import com.ecommerce.event.ProductDeletedEvent;
 import com.ecommerce.event.ProductUpdatedEvent;
 import com.ecommerce.event.StockChangedEvent;
+import com.ecommerce.repository.CategoryRepository;
 import com.ecommerce.service.ProductService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.reactive.messaging.annotations.Merge;
@@ -36,16 +38,23 @@ public class ProductEventProducerTest {
     @Inject
     ProductService productService;
     @Inject
+    CategoryRepository categoryRepository;
+    @Inject
     TestEventConsumer testEventConsumer;
+
+    private String categoryId;
 
     @BeforeEach
     public void setUp() {
         testEventConsumer.clearQueues();
+        Category category = new Category("Test Category", null);
+        categoryRepository.persist(category);
+        categoryId = category.id.toString();
     }
 
     @Test
     public void shouldPublishProductCreatedEvent() {
-        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, "Category");
+        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, categoryId);
 
         product = productService.create(product);
 
@@ -57,9 +66,9 @@ public class ProductEventProducerTest {
 
     @Test
     public void shouldPublishProductUpdatedEvent() {
-        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, "Category");
+        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, categoryId);
         productService.create(product);
-        Product updatedProduct = new Product("Updated Product", "Updated Description", new Money(new BigDecimal("15.00"), "BRL"), 3, "Category");
+        Product updatedProduct = new Product("Updated Product", "Updated Description", new Money(new BigDecimal("15.00"), "BRL"), 3, categoryId);
         productService.update(product.id.toString(), updatedProduct);
 
         Record<String, ProductUpdatedEvent> received = testEventConsumer.pollUpdated(5, SECONDS);
@@ -70,7 +79,7 @@ public class ProductEventProducerTest {
 
     @Test
     public void shouldPublishProductDeletedEvent() {
-        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, "Category");
+        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, categoryId);
         productService.create(product);
 
         productService.delete(product.id.toString());
@@ -83,7 +92,7 @@ public class ProductEventProducerTest {
 
     @Test
     public void shouldPublishStockChangedEvent() {
-        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, "Category");
+        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, categoryId);
         product = productService.create(product);
 
         productService.decreaseStock(product.id.toString(), 5);
