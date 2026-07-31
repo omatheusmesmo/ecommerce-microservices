@@ -38,4 +38,15 @@
             </ext:options>
         </ext:createIndex>
     </changeSet>
+
+    <changeSet id="4-index-products-variants-sku" author="ecommerce">
+        <ext:createIndex collectionName="products">
+            <ext:keys>
+                { "variants.sku": 1 }
+            </ext:keys>
+            <ext:options>
+                { name: "idx_products_variants_sku", unique: true, sparse: true }
+            </ext:options>
+        </ext:createIndex>
+    </changeSet>
 </databaseChangeLog>

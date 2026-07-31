@@ -1,6 +1,7 @@
 package com.ecommerce.service;
 
 import com.ecommerce.entity.Product;
+import com.ecommerce.entity.ProductVariant;
 import com.ecommerce.entity.StockChangedReason;
 import com.ecommerce.event.ProductCreatedEvent;
 import com.ecommerce.event.ProductDeletedEvent;
@@ -226,5 +227,77 @@ public class ProductService {
         if (categoryRepository.findById(new ObjectId(categoryId)) == null) {
             throw new NoSuchElementException("Category " + categoryId + " was not found");
         }
+    }
+
+    public List<ProductVariant> findVariants(String productId) {
+        return requireProduct(productId).variants;
+    }
+
+    @CacheInvalidateAll(cacheName = "products-cache")
+    @CacheInvalidateAll(cacheName = "products-by-category")
+    @CacheInvalidateAll(cacheName = "products-active")
+    public ProductVariant addVariant(String productId, ProductVariant variant) {
+        Product product = requireProduct(productId);
+        requireSkuAvailable(variant.sku());
+
+        product.variants.add(variant);
+        productRepository.update(product);
+        LOG.infof("Variant %s added to product %s", variant.sku(), productId);
+        return variant;
+    }
+
+    @CacheInvalidateAll(cacheName = "products-cache")
+    @CacheInvalidateAll(cacheName = "products-by-category")
+    @CacheInvalidateAll(cacheName = "products-active")
+    public ProductVariant updateVariant(String productId, String sku, ProductVariant updatedVariant) {
+        Product product = requireProduct(productId);
+        int index = indexOfVariant(product, sku);
+        if (index < 0) {
+            throw new NoSuchElementException("Variant " + sku + " was not found");
+        }
+        if (!sku.equals(updatedVariant.sku())) {
+            requireSkuAvailable(updatedVariant.sku());
+        }
+
+        product.variants.set(index, updatedVariant);
+        productRepository.update(product);
+        LOG.infof("Variant %s updated on product %s", sku, productId);
+        return updatedVariant;
+    }
+
+    @CacheInvalidateAll(cacheName = "products-cache")
+    @CacheInvalidateAll(cacheName = "products-by-category")
+    @CacheInvalidateAll(cacheName = "products-active")
+    public boolean removeVariant(String productId, String sku) {
+        Product product = requireProduct(productId);
+        boolean removed = product.variants.removeIf(v -> v.sku().equals(sku));
+        if (removed) {
+            productRepository.update(product);
+            LOG.infof("Variant %s removed from product %s", sku, productId);
+        }
+        return removed;
+    }
+
+    private Product requireProduct(String productId) {
+        Product product = findById(productId);
+        if (product == null) {
+            throw new NoSuchElementException("Product " + productId + " was not found");
+        }
+        return product;
+    }
+
+    private void requireSkuAvailable(String sku) {
+        if (productRepository.existsByVariantSku(sku)) {
+            throw new IllegalArgumentException("Variant with SKU " + sku + " already exists");
+        }
+    }
+
+    private int indexOfVariant(Product product, String sku) {
+        for (int i = 0; i < product.variants.size(); i++) {
+            if (product.variants.get(i).sku().equals(sku)) {
+                return i;
+            }
+        }
+        return -1;
     }
 }

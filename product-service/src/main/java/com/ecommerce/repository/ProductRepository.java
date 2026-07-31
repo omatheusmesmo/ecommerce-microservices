@@ -31,6 +31,10 @@ public class ProductRepository implements PanacheMongoRepository<Product> {
         return list("name like ?1", "%" + name + "%");
     }
 
+    public boolean existsByVariantSku(String sku){
+        return find("variants.sku", sku).firstResultOptional().isPresent();
+    }
+
     public long decreaseStock(String productId, Integer quantity){
         UpdateResult result = mongoCollection().updateOne(
                 Filters.and(

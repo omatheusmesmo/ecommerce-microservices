@@ -7,6 +7,8 @@ import io.quarkus.mongodb.panache.common.MongoEntity;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @MongoEntity(collection = "products")
 public class Product extends PanacheMongoEntity {
@@ -32,6 +34,9 @@ public class Product extends PanacheMongoEntity {
     public Boolean active = true;
     public LocalDateTime createdAt = LocalDateTime.now();
     public LocalDateTime updatedAt = LocalDateTime.now();
+
+    @Valid
+    public List<ProductVariant> variants = new ArrayList<>();
 
     public Product() {
     }

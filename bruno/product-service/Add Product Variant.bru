@@ -1,0 +1,27 @@
+meta {
+  name: Add Product Variant (Admin-Seller)
+  type: http
+  seq: 6
+}
+
+post {
+  url: http://localhost:8082/products/{{productId}}/variants
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "sku": "GLT-BLK-15",
+    "attributes": {
+      "color": "Black",
+      "size": "15-inch"
+    },
+    "price": null,
+    "stock": 5
+  }
+}

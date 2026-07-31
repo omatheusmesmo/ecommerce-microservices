@@ -1,6 +1,7 @@
 package com.ecommerce.resource;
 
 import com.ecommerce.entity.Product;
+import com.ecommerce.entity.ProductVariant;
 import com.ecommerce.service.ProductService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -88,6 +89,42 @@ public class ProductResource {
         boolean deleted = productService.delete(id);
         if (!deleted) {
             return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.noContent().build();
+    }
+
+    @GET
+    @Path("/{id}/variants")
+    public List<ProductVariant> findVariants(@PathParam("id") String id) {
+        return productService.findVariants(id);
+    }
+
+    @POST
+    @Path("/{id}/variants")
+    @RolesAllowed({"ADMIN", "SELLER"})
+    public Response addVariant(@PathParam("id") String id, @Valid ProductVariant variant) {
+        LOG.infof("POST /products/%s/variants - Adding variant: %s", id, variant.sku());
+        ProductVariant created = productService.addVariant(id, variant);
+        return Response.status(Response.Status.CREATED).entity(created).build();
+    }
+
+    @PUT
+    @Path("/{id}/variants/{sku}")
+    @RolesAllowed({"ADMIN", "SELLER"})
+    public Response updateVariant(@PathParam("id") String id, @PathParam("sku") String sku, @Valid ProductVariant variant) {
+        LOG.infof("PUT /products/%s/variants/%s - Updating variant", id, sku);
+        ProductVariant updated = productService.updateVariant(id, sku, variant);
+        return Response.ok(updated).build();
+    }
+
+    @DELETE
+    @Path("/{id}/variants/{sku}")
+    @RolesAllowed("ADMIN")
+    public Response removeVariant(@PathParam("id") String id, @PathParam("sku") String sku) {
+        LOG.infof("DELETE /products/%s/variants/%s", id, sku);
+        boolean removed = productService.removeVariant(id, sku);
+        if (!removed) {
+            throw new NoSuchElementException("Variant " + sku + " was not found");
         }
         return Response.noContent().build();
     }
