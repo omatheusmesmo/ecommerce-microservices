@@ -83,7 +83,7 @@ public class ProductService {
                 product.name,
                 product.categoryId,
                 product.price,
-                product.stock,
+                product.totalOnHand(),
                 product.createdAt
         );
         eventProducer.publishProductCreated(event);
@@ -105,13 +105,13 @@ public class ProductService {
         }
 
         requireCategoryExists(updatedProduct.categoryId);
-        Integer oldStock = existing.stock;
+        Integer oldStock = existing.totalOnHand();
 
         existing.name = updatedProduct.name;
         existing.description = updatedProduct.description;
         existing.price = updatedProduct.price;
         existing.categoryId = updatedProduct.categoryId;
-        existing.stock = updatedProduct.stock;
+        existing.stockLocations = updatedProduct.stockLocations;
         existing.active = updatedProduct.active;
         existing.updatedAt = LocalDateTime.now();
 
@@ -123,17 +123,17 @@ public class ProductService {
                 existing.name,
                 existing.categoryId,
                 existing.price,
-                existing.stock,
+                existing.totalOnHand(),
                 existing.updatedAt
         );
         eventProducer.publishProductUpdated(event);
 
-        if (!Objects.equals(oldStock, existing.stock)) {
+        if (!Objects.equals(oldStock, existing.totalOnHand())) {
             StockChangedEvent stockEvent = new StockChangedEvent(
                     existing.id.toString(),
                     existing.name,
                     oldStock,
-                    existing.stock,
+                    existing.totalOnHand(),
                     StockChangedReason.ADJUSTMENT,
                     LocalDateTime.now()
             );
@@ -186,8 +186,8 @@ public class ProductService {
         StockChangedEvent event = new StockChangedEvent(
                 updated.id.toString(),
                 updated.name,
-                updated.stock + quantity,
-                updated.stock,
+                updated.totalOnHand() + quantity,
+                updated.totalOnHand(),
                 StockChangedReason.PURCHASE,
                 LocalDateTime.now()
         );
@@ -214,8 +214,8 @@ public class ProductService {
         StockChangedEvent event = new StockChangedEvent(
                 updated.id.toString(),
                 updated.name,
-                updated.stock - quantity,
-                updated.stock,
+                updated.totalOnHand() - quantity,
+                updated.totalOnHand(),
                 StockChangedReason.RESTOCK,
                 LocalDateTime.now()
         );

@@ -62,7 +62,7 @@ class ProductVariantResourceTest {
                 .then()
                 .statusCode(201)
                 .body("sku", is(variant.sku()))
-                .body("stock", is(10));
+                .body("stockLocations[0].quantityOnHand", is(10));
 
         given()
                 .when()
@@ -136,7 +136,7 @@ class ProductVariantResourceTest {
                 .put("/{id}/variants/{sku}", productId, sku)
                 .then()
                 .statusCode(200)
-                .body("stock", is(20))
+                .body("stockLocations[0].quantityOnHand", is(20))
                 .body("attributes.size", is("L"));
     }
 

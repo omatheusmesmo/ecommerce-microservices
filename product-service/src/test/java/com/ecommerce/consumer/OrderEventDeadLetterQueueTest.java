@@ -81,7 +81,7 @@ public class OrderEventDeadLetterQueueTest {
                 "Expected an event that exhausts stock-decrease retries to be routed to the DLQ topic");
 
         Product unchanged = productService.findById(productId);
-        assertEquals(1, unchanged.stock, "stock should remain untouched since the update never succeeded");
+        assertEquals(1, unchanged.totalOnHand(), "stock should remain untouched since the update never succeeded");
     }
 
     private boolean waitForDlqMessage(String marker) {

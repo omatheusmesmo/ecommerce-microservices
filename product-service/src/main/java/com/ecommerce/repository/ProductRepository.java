@@ -1,7 +1,9 @@
 package com.ecommerce.repository;
 
 import com.ecommerce.entity.Product;
+import com.ecommerce.valueobject.StockLocation;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
@@ -35,27 +37,51 @@ public class ProductRepository implements PanacheMongoRepository<Product> {
         return find("variants.sku", sku).firstResultOptional().isPresent();
     }
 
+    /**
+     * Atomically decreases {@code quantityOnHand} of the {@link StockLocation} identified by
+     * {@link StockLocation#DEFAULT_LOCATION_ID}, only if enough quantity is available.
+     *
+     * @param productId the product's identifier
+     * @param quantity  the quantity to subtract
+     * @return the number of documents modified; {@code 0} if the product was not found or has insufficient stock
+     */
     public long decreaseStock(String productId, Integer quantity){
         UpdateResult result = mongoCollection().updateOne(
                 Filters.and(
                         Filters.eq("_id", new ObjectId(productId)),
-                        Filters.gte("stock", quantity)
+                        Filters.elemMatch("stockLocations", Filters.and(
+                                Filters.eq("locationId", StockLocation.DEFAULT_LOCATION_ID),
+                                Filters.gte("quantityOnHand", quantity)
+                        ))
                 ),
                 Updates.combine(
-                        Updates.inc("stock", -quantity),
+                        Updates.inc("stockLocations.$[loc].quantityOnHand", -quantity),
                         Updates.set("updatedAt", LocalDateTime.now())
-                )
+                ),
+                new UpdateOptions().arrayFilters(List.of(Filters.eq("loc.locationId", StockLocation.DEFAULT_LOCATION_ID)))
         );
         return result.getModifiedCount();
     }
 
+    /**
+     * Atomically increases {@code quantityOnHand} of the {@link StockLocation} identified by
+     * {@link StockLocation#DEFAULT_LOCATION_ID}.
+     *
+     * @param productId the product's identifier
+     * @param quantity  the quantity to add
+     * @return the number of documents modified; {@code 0} if the product was not found
+     */
     public long increaseStock(String productId, Integer quantity){
         UpdateResult result = mongoCollection().updateOne(
-                Filters.eq("_id", new ObjectId(productId)),
+                Filters.and(
+                        Filters.eq("_id", new ObjectId(productId)),
+                        Filters.elemMatch("stockLocations", Filters.eq("locationId", StockLocation.DEFAULT_LOCATION_ID))
+                ),
                 Updates.combine(
-                        Updates.inc("stock", quantity),
+                        Updates.inc("stockLocations.$[loc].quantityOnHand", quantity),
                         Updates.set("updatedAt", LocalDateTime.now())
-                )
+                ),
+                new UpdateOptions().arrayFilters(List.of(Filters.eq("loc.locationId", StockLocation.DEFAULT_LOCATION_ID)))
         );
         return result.getModifiedCount();
     }

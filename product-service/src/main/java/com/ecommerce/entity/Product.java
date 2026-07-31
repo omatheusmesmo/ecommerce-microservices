@@ -1,6 +1,7 @@
 package com.ecommerce.entity;
 
 import com.ecommerce.valueobject.Money;
+import com.ecommerce.valueobject.StockLocation;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 
@@ -24,9 +25,9 @@ public class Product extends PanacheMongoEntity {
     @Valid
     public Money price;
 
-    @NotNull(message = "Stock is required")
-    @Min(value = 0, message = "Stock must be greater than or equal to zero")
-    public Integer stock;
+    @NotEmpty(message = "At least one stock location is required")
+    @Valid
+    public List<StockLocation> stockLocations = new ArrayList<>();
 
     @NotBlank(message = "Category is required")
     public String categoryId;
@@ -42,10 +43,26 @@ public class Product extends PanacheMongoEntity {
     }
 
     public Product(String name, String description, Money price, Integer stock, String categoryId) {
+        this(name, description, price, List.of(new StockLocation(StockLocation.DEFAULT_LOCATION_ID, stock, 0)), categoryId);
+    }
+
+    public Product(String name, String description, Money price, List<StockLocation> stockLocations, String categoryId) {
         this.name = name;
         this.description = description;
         this.price = price;
-        this.stock = stock;
+        this.stockLocations = new ArrayList<>(stockLocations);
         this.categoryId = categoryId;
+    }
+
+    public int totalOnHand() {
+        return stockLocations.stream().mapToInt(StockLocation::quantityOnHand).sum();
+    }
+
+    public int totalReserved() {
+        return stockLocations.stream().mapToInt(StockLocation::quantityReserved).sum();
+    }
+
+    public int totalAvailable() {
+        return totalOnHand() - totalReserved();
     }
 }

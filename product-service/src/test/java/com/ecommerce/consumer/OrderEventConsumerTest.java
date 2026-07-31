@@ -74,9 +74,9 @@ public class OrderEventConsumerTest {
             producer.send(record);
         }
 
-        await().atMost(30, TimeUnit.SECONDS).until(() -> productService.findById(productId).stock == 8);
+        await().atMost(30, TimeUnit.SECONDS).until(() -> productService.findById(productId).totalOnHand() == 8);
         Product updated = productService.findById(productId);
-        assertEquals(8, updated.stock);
+        assertEquals(8, updated.totalOnHand());
     }
 
     @Test
@@ -94,9 +94,9 @@ public class OrderEventConsumerTest {
             producer.send(record);
         }
 
-        await().atMost(30, TimeUnit.SECONDS).until(() -> productService.findById(productId).stock == 13);
+        await().atMost(30, TimeUnit.SECONDS).until(() -> productService.findById(productId).totalOnHand() == 13);
         Product updated = productService.findById(productId);
-        assertEquals(13, updated.stock);
+        assertEquals(13, updated.totalOnHand());
     }
 
     @Test
@@ -115,7 +115,7 @@ public class OrderEventConsumerTest {
         orderEventConsumer.onOrderEvent(kafkaMessage);
 
         Product updated = productService.findById(productId);
-        assertEquals(8, updated.stock);
+        assertEquals(8, updated.totalOnHand());
     }
 
     private Message<String> toRedeliveredKafkaMessage(String payload, long offset) {
