@@ -1,6 +1,5 @@
 package com.ecommerce.job;
 
-import com.ecommerce.entity.OutboxEvent;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

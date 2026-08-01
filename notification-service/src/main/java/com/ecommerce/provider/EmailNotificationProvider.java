@@ -4,7 +4,6 @@ import com.ecommerce.client.BrevoEmailClient;
 import com.ecommerce.dto.BrevoEmailRequest;
 import com.ecommerce.dto.NotificationRequest;
 import com.ecommerce.enums.NotificationChannel;
-import com.ecommerce.enums.NotificationType;
 import com.ecommerce.enums.OrderStatus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
