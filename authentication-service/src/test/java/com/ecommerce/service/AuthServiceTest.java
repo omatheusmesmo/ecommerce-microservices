@@ -1,5 +1,9 @@
 package com.ecommerce.service;
 
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.ecommerce.dto.LoginRequest;
 import com.ecommerce.dto.RefreshRequest;
 import com.ecommerce.dto.TokenResponse;
@@ -11,10 +15,6 @@ import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @QuarkusTest
 class AuthServiceTest {
@@ -50,8 +50,8 @@ class AuthServiceTest {
     @Test
     @TestTransaction
     void login_unknownEmail_throwsSecurityException() {
-        assertThrows(SecurityException.class,
-                () -> authService.login(new LoginRequest("nobody@example.com", "whatever")));
+        assertThrows(
+                SecurityException.class, () -> authService.login(new LoginRequest("nobody@example.com", "whatever")));
     }
 
     @Test
@@ -61,8 +61,7 @@ class AuthServiceTest {
         Long id = persistActiveUser(email, "correct-password");
         userRepository.findById(id).active = false;
 
-        assertThrows(SecurityException.class,
-                () -> authService.login(new LoginRequest(email, "correct-password")));
+        assertThrows(SecurityException.class, () -> authService.login(new LoginRequest(email, "correct-password")));
     }
 
     @Test
@@ -71,8 +70,7 @@ class AuthServiceTest {
         String email = "login2@example.com";
         persistActiveUser(email, "correct-password");
 
-        assertThrows(SecurityException.class,
-                () -> authService.login(new LoginRequest(email, "wrong-password")));
+        assertThrows(SecurityException.class, () -> authService.login(new LoginRequest(email, "wrong-password")));
     }
 
     @Test
@@ -87,7 +85,8 @@ class AuthServiceTest {
         assertNotNull(refreshResponse.refreshToken());
         assertNotEquals(loginResponse.refreshToken(), refreshResponse.refreshToken());
 
-        assertThrows(SecurityException.class,
+        assertThrows(
+                SecurityException.class,
                 () -> authService.refresh(new RefreshRequest(loginResponse.refreshToken())),
                 "the old refresh token should have been revoked");
     }
@@ -95,7 +94,6 @@ class AuthServiceTest {
     @Test
     @TestTransaction
     void refresh_invalidToken_throwsSecurityException() {
-        assertThrows(SecurityException.class,
-                () -> authService.refresh(new RefreshRequest("bogus-token")));
+        assertThrows(SecurityException.class, () -> authService.refresh(new RefreshRequest("bogus-token")));
     }
 }

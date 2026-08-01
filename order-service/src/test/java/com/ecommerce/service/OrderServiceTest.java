@@ -1,5 +1,10 @@
 package com.ecommerce.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.ecommerce.dto.CreateOrderRequest;
 import com.ecommerce.dto.OrderItemRequest;
 import com.ecommerce.dto.OrderResponse;
@@ -11,14 +16,6 @@ import com.ecommerce.valueobject.Money;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.serialization.StringDeserializer;
-import org.eclipse.microprofile.config.ConfigProvider;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Collections;
@@ -28,11 +25,13 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.function.Predicate;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 class OrderServiceTest {
@@ -70,8 +69,10 @@ class OrderServiceTest {
         assertTrue(orderRepository.findByIdOptional(response.id()).isPresent());
 
         assertEquals(outboxCountBefore + 1, OutboxEvent.count());
-        OutboxEvent event = OutboxEvent
-                .find("aggregateType = ?1 and aggregateId = ?2", "Order", response.id().toString())
+        OutboxEvent event = OutboxEvent.find(
+                        "aggregateType = ?1 and aggregateId = ?2",
+                        "Order",
+                        response.id().toString())
                 .firstResult();
         assertNotNull(event);
         assertEquals("OrderCreated", event.eventType);
@@ -88,8 +89,8 @@ class OrderServiceTest {
 
         OrderResponse response = orderService.createOrder(request);
 
-        Optional<String> message = waitForKafkaMessage("outbox.event.Order",
-                value -> value.contains("\"orderId\":" + response.id()), 10);
+        Optional<String> message =
+                waitForKafkaMessage("outbox.event.Order", value -> value.contains("\"orderId\":" + response.id()), 10);
 
         assertTrue(message.isPresent(), "expected the order-created outbox event to reach Kafka");
     }
@@ -115,8 +116,7 @@ class OrderServiceTest {
     void cancelOrder_deliveredOrder_throwsIllegalStateException() {
         Long id = persistOrder(OrderStatus.DELIVERED);
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> orderService.cancelOrder(id));
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> orderService.cancelOrder(id));
         assertEquals("Cannot transition order from DELIVERED to CANCELLED", ex.getMessage());
         assertEquals(OrderStatus.DELIVERED, orderRepository.findById(id).status);
     }
@@ -126,8 +126,7 @@ class OrderServiceTest {
     void cancelOrder_alreadyCancelledOrder_throwsIllegalStateException() {
         Long id = persistOrder(OrderStatus.CANCELLED);
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> orderService.cancelOrder(id));
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> orderService.cancelOrder(id));
         assertEquals("Cannot transition order from CANCELLED to CANCELLED", ex.getMessage());
     }
 
@@ -151,8 +150,8 @@ class OrderServiceTest {
     @Test
     @TestTransaction
     void updateStatus_notFound_throwsNoSuchElementException() {
-        assertThrows(NoSuchElementException.class,
-                () -> orderService.updateStatus(Long.MAX_VALUE, OrderStatus.CONFIRMED));
+        assertThrows(
+                NoSuchElementException.class, () -> orderService.updateStatus(Long.MAX_VALUE, OrderStatus.CONFIRMED));
     }
 
     @Test
@@ -160,8 +159,8 @@ class OrderServiceTest {
     void updateStatus_illegalTransition_throwsAndKeepsStatus() {
         Long id = persistOrder(OrderStatus.DELIVERED);
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> orderService.updateStatus(id, OrderStatus.PENDING));
+        IllegalStateException ex =
+                assertThrows(IllegalStateException.class, () -> orderService.updateStatus(id, OrderStatus.PENDING));
         assertEquals("Cannot transition order from DELIVERED to PENDING", ex.getMessage());
         assertEquals(OrderStatus.DELIVERED, orderRepository.findById(id).status);
     }
@@ -171,8 +170,7 @@ class OrderServiceTest {
     void updateStatus_skippingStates_isRejected() {
         Long id = persistOrder(OrderStatus.PENDING);
 
-        assertThrows(IllegalStateException.class,
-                () -> orderService.updateStatus(id, OrderStatus.SHIPPED));
+        assertThrows(IllegalStateException.class, () -> orderService.updateStatus(id, OrderStatus.SHIPPED));
         assertEquals(OrderStatus.PENDING, orderRepository.findById(id).status);
     }
 
@@ -191,7 +189,9 @@ class OrderServiceTest {
     private Optional<String> waitForKafkaMessage(String topic, Predicate<String> predicate, int timeoutSeconds) {
         long deadline = System.currentTimeMillis() + timeoutSeconds * 1000L;
         Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
+        props.put(
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "test-group-" + UUID.randomUUID());
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());

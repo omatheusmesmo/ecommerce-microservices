@@ -10,4 +10,5 @@ public enum StockChangeReason {
     RETURN,
     DAMAGE,
     LOST,
-    INITIAL}
+    INITIAL
+}

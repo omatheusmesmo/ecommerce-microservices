@@ -28,7 +28,8 @@ public class DeadLetterQueueConsumer {
     @Incoming("authentication-email-dlq")
     @Blocking
     public void onAuthenticationEmailDeadLetterMessage(String message) {
-        registry.counter("notification.dlq.messages", "source", "authentication-email").increment();
+        registry.counter("notification.dlq.messages", "source", "authentication-email")
+                .increment();
         LOG.errorf("⚠️ CRITICAL: Authentication email event sent to DLQ - Manual investigation required!");
         LOG.errorf("DLQ Event Payload: %s", message);
         LOG.warnf("Event preserved in DLQ topic for reprocessing: authentication-email.dlq");

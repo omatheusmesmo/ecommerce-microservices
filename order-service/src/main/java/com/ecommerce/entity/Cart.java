@@ -15,18 +15,13 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "carts")
-@SequenceGenerator(
-        name = "carts_seq_gen",
-        sequenceName = "carts_seq",
-        allocationSize = 50
-)
+@SequenceGenerator(name = "carts_seq_gen", sequenceName = "carts_seq", allocationSize = 50)
 public class Cart extends PanacheEntity {
 
     @Column(nullable = false)
@@ -37,7 +32,9 @@ public class Cart extends PanacheEntity {
     public CartStatus status;
 
     @Embedded
-    @AttributeOverride(name = "amount", column = @Column(name = "total_amount", nullable = false, precision = 10, scale = 2))
+    @AttributeOverride(
+            name = "amount",
+            column = @Column(name = "total_amount", nullable = false, precision = 10, scale = 2))
     @AttributeOverride(name = "currency", column = @Column(name = "total_currency", nullable = false, length = 3))
     public Money totalAmount;
 
@@ -81,10 +78,8 @@ public class Cart extends PanacheEntity {
     }
 
     public void calculateTotal() {
-        this.totalAmount = items.stream()
-                .map(CartItem::getSubtotal)
-                .reduce(Money::add)
-                .orElse(Money.zero(Money.DEFAULT_CURRENCY));
+        this.totalAmount =
+                items.stream().map(CartItem::getSubtotal).reduce(Money::add).orElse(Money.zero(Money.DEFAULT_CURRENCY));
     }
 
     @PreUpdate

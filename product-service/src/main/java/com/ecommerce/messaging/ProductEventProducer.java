@@ -33,37 +33,27 @@ public class ProductEventProducer {
     @Channel("stock-changed")
     Emitter<StockChangedEvent> stockChangedEmitter;
 
-    public void publishProductCreated(ProductCreatedEvent event){
-        productCreatedEmitter.send(
-                Message.of(event).addMetadata(buildMetadata(event.productId()))
-        );
+    public void publishProductCreated(ProductCreatedEvent event) {
+        productCreatedEmitter.send(Message.of(event).addMetadata(buildMetadata(event.productId())));
         LOG.infof("Product created event published: %s", event.productId());
     }
 
-    public void publishProductUpdated(ProductUpdatedEvent event){
-        productUpdatedEmitter.send(
-                Message.of(event).addMetadata(buildMetadata(event.productId()))
-        );
+    public void publishProductUpdated(ProductUpdatedEvent event) {
+        productUpdatedEmitter.send(Message.of(event).addMetadata(buildMetadata(event.productId())));
         LOG.infof("Product updated event published: %s", event.productId());
     }
 
-    public void publishStockChanged(StockChangedEvent event){
-        stockChangedEmitter.send(
-                Message.of(event).addMetadata(buildMetadata(event.productId()))
-        );
+    public void publishStockChanged(StockChangedEvent event) {
+        stockChangedEmitter.send(Message.of(event).addMetadata(buildMetadata(event.productId())));
         LOG.infof("Stock changed event published: %s", event.productId());
     }
 
-    public void publishProductDeleted(ProductDeletedEvent event){
-        productDeletedEmitter.send(
-                Message.of(event).addMetadata(buildMetadata(event.productId()))
-        );
+    public void publishProductDeleted(ProductDeletedEvent event) {
+        productDeletedEmitter.send(Message.of(event).addMetadata(buildMetadata(event.productId())));
         LOG.infof("Product deleted event published: %s", event.productId());
     }
 
-    private OutgoingKafkaRecordMetadata<String> buildMetadata(String key){
-        return OutgoingKafkaRecordMetadata.<String>builder()
-                .withKey(key)
-                .build();
+    private OutgoingKafkaRecordMetadata<String> buildMetadata(String key) {
+        return OutgoingKafkaRecordMetadata.<String>builder().withKey(key).build();
     }
 }

@@ -11,15 +11,16 @@ import jakarta.validation.constraints.Size;
 @RegisterForReflection
 public record RegisterRequest(
         @NotBlank @Email String email,
+
         @NotBlank
         @Size(min = 12, max = 128, message = "Password must be between 12 and 128 characters")
         @Pattern(
                 regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z0-9]).+$",
-                message = "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character"
-        )
+                message =
+                        "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character")
         String password,
-        @NotBlank String fullName
-) {
+
+        @NotBlank String fullName) {
     public User toUser(String hashedPassword) {
         User user = new User();
         user.email = email;

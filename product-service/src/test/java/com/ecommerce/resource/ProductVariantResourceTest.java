@@ -1,5 +1,8 @@
 package com.ecommerce.resource;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
+
 import com.ecommerce.entity.Category;
 import com.ecommerce.entity.Product;
 import com.ecommerce.entity.ProductVariant;
@@ -10,14 +13,10 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
-
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestHTTPEndpoint(ProductResource.class)
@@ -33,15 +32,16 @@ class ProductVariantResourceTest {
     }
 
     private String newProductId() {
-        Product product = new Product("T-Shirt", "A shirt", new Money(new BigDecimal("50.00"), "BRL"), 0, newCategoryId());
-        return given()
-                .body(product)
+        Product product =
+                new Product("T-Shirt", "A shirt", new Money(new BigDecimal("50.00"), "BRL"), 0, newCategoryId());
+        return given().body(product)
                 .contentType(ContentType.JSON)
                 .when()
                 .post()
                 .then()
                 .statusCode(201)
-                .extract().path("id");
+                .extract()
+                .path("id");
     }
 
     private String newSku() {
@@ -54,8 +54,7 @@ class ProductVariantResourceTest {
         String productId = newProductId();
         ProductVariant variant = new ProductVariant(newSku(), Map.of("color", "Red", "size", "M"), null, 10);
 
-        given()
-                .body(variant)
+        given().body(variant)
                 .contentType(ContentType.JSON)
                 .when()
                 .post("/{id}/variants", productId)
@@ -64,8 +63,7 @@ class ProductVariantResourceTest {
                 .body("sku", is(variant.sku()))
                 .body("stockLocations[0].quantityOnHand", is(10));
 
-        given()
-                .when()
+        given().when()
                 .get("/{id}/variants", productId)
                 .then()
                 .statusCode(200)
@@ -80,8 +78,7 @@ class ProductVariantResourceTest {
         String firstProductId = newProductId();
         ProductVariant variant = new ProductVariant(sku, Map.of("size", "M"), null, 5);
 
-        given()
-                .body(variant)
+        given().body(variant)
                 .contentType(ContentType.JSON)
                 .when()
                 .post("/{id}/variants", firstProductId)
@@ -89,8 +86,7 @@ class ProductVariantResourceTest {
                 .statusCode(201);
 
         String secondProductId = newProductId();
-        given()
-                .body(variant)
+        given().body(variant)
                 .contentType(ContentType.JSON)
                 .when()
                 .post("/{id}/variants", secondProductId)
@@ -103,8 +99,7 @@ class ProductVariantResourceTest {
     public void addVariant_unknownProduct_returnsNotFound() {
         ProductVariant variant = new ProductVariant(newSku(), Map.of("size", "M"), null, 5);
 
-        given()
-                .body(variant)
+        given().body(variant)
                 .contentType(ContentType.JSON)
                 .when()
                 .post("/{id}/variants", "000000000000000000000000")
@@ -119,18 +114,17 @@ class ProductVariantResourceTest {
         String sku = newSku();
         ProductVariant variant = new ProductVariant(sku, Map.of("size", "M"), null, 5);
 
-        given()
-                .body(variant)
+        given().body(variant)
                 .contentType(ContentType.JSON)
                 .when()
                 .post("/{id}/variants", productId)
                 .then()
                 .statusCode(201);
 
-        ProductVariant updated = new ProductVariant(sku, Map.of("size", "L"), new Money(new BigDecimal("60.00"), "BRL"), 20);
+        ProductVariant updated =
+                new ProductVariant(sku, Map.of("size", "L"), new Money(new BigDecimal("60.00"), "BRL"), 20);
 
-        given()
-                .body(updated)
+        given().body(updated)
                 .contentType(ContentType.JSON)
                 .when()
                 .put("/{id}/variants/{sku}", productId, sku)
@@ -146,8 +140,7 @@ class ProductVariantResourceTest {
         String productId = newProductId();
         ProductVariant updated = new ProductVariant(newSku(), Map.of("size", "L"), null, 20);
 
-        given()
-                .body(updated)
+        given().body(updated)
                 .contentType(ContentType.JSON)
                 .when()
                 .put("/{id}/variants/{sku}", productId, "does-not-exist")
@@ -162,31 +155,20 @@ class ProductVariantResourceTest {
         String sku = newSku();
         ProductVariant variant = new ProductVariant(sku, Map.of("size", "M"), null, 5);
 
-        given()
-                .body(variant)
+        given().body(variant)
                 .contentType(ContentType.JSON)
                 .when()
                 .post("/{id}/variants", productId)
                 .then()
                 .statusCode(201);
 
-        given()
-                .when()
-                .delete("/{id}/variants/{sku}", productId, sku)
-                .then()
-                .statusCode(204);
+        given().when().delete("/{id}/variants/{sku}", productId, sku).then().statusCode(204);
 
-        given()
-                .when()
-                .get("/{id}/variants", productId)
-                .then()
-                .statusCode(200)
-                .body("$", hasSize(0));
+        given().when().get("/{id}/variants", productId).then().statusCode(200).body("$", hasSize(0));
 
         // SKU freed for reuse on another product now that it's been removed
         String otherProductId = newProductId();
-        given()
-                .body(variant)
+        given().body(variant)
                 .contentType(ContentType.JSON)
                 .when()
                 .post("/{id}/variants", otherProductId)
@@ -199,8 +181,7 @@ class ProductVariantResourceTest {
     public void removeVariant_unknownSku_returnsNotFound() {
         String productId = newProductId();
 
-        given()
-                .when()
+        given().when()
                 .delete("/{id}/variants/{sku}", productId, "does-not-exist")
                 .then()
                 .statusCode(404);

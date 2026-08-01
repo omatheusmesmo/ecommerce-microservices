@@ -7,12 +7,11 @@ import io.quarkus.scheduler.Scheduled;
 import io.smallrye.reactive.messaging.kafka.api.OutgoingKafkaRecordMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import java.util.List;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
-
-import java.util.List;
 
 /**
  * Stand-in for the Debezium connector outside %prod, where nothing captures the
@@ -33,9 +32,10 @@ public class OutboxDevPublisher {
     public void publishPendingEvents() {
         List<OutboxEvent> events = OutboxEvent.listAll(Sort.by("id"));
         for (OutboxEvent event : events) {
-            emitter.send(Message.of(event.payload).addMetadata(
-                    OutgoingKafkaRecordMetadata.<String>builder().withKey(event.aggregateId).build()
-            ));
+            emitter.send(Message.of(event.payload)
+                    .addMetadata(OutgoingKafkaRecordMetadata.<String>builder()
+                            .withKey(event.aggregateId)
+                            .build()));
             event.delete();
         }
         if (!events.isEmpty()) {

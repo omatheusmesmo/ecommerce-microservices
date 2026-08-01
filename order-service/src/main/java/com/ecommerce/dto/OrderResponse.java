@@ -3,7 +3,6 @@ package com.ecommerce.dto;
 import com.ecommerce.entity.Order;
 import com.ecommerce.entity.OrderStatus;
 import com.ecommerce.valueobject.Money;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -16,8 +15,7 @@ public record OrderResponse(
         Money shippingCost,
         List<OrderItemResponse> items,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
-) {
+        LocalDateTime updatedAt) {
     public static OrderResponse from(Order order) {
         return new OrderResponse(
                 order.id,
@@ -26,12 +24,9 @@ public record OrderResponse(
                 order.status,
                 order.totalAmount,
                 order.shippingCost,
-                order.getItems().stream()
-                        .map(OrderItemResponse::from)
-                        .toList(),
+                order.getItems().stream().map(OrderItemResponse::from).toList(),
                 order.createdAt,
-                order.updatedAt
-        );
+                order.updatedAt);
     }
 
     public static OrderResponse fromWithoutItems(Order order) {
@@ -44,7 +39,6 @@ public record OrderResponse(
                 order.shippingCost,
                 List.of(),
                 order.createdAt,
-                order.updatedAt
-        );
+                order.updatedAt);
     }
 }

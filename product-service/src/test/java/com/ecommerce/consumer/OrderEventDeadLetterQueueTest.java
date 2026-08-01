@@ -1,14 +1,23 @@
 package com.ecommerce.consumer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.ecommerce.entity.Category;
 import com.ecommerce.entity.Product;
-import com.ecommerce.valueobject.Money;
 import com.ecommerce.event.OrderCreatedEvent;
 import com.ecommerce.repository.CategoryRepository;
 import com.ecommerce.service.ProductService;
+import com.ecommerce.valueobject.Money;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Properties;
+import java.util.UUID;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -20,16 +29,6 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
-
-import java.math.BigDecimal;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Properties;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 public class OrderEventDeadLetterQueueTest {
@@ -63,21 +62,33 @@ public class OrderEventDeadLetterQueueTest {
 
     @Test
     public void orderCreatedEvent_insufficientStock_exhaustsRetriesAndRoutesToDeadLetterQueue() throws Exception {
-        Product product = new Product("Low Stock Product", "Description", new Money(new BigDecimal("50.00"), "BRL"), 1, newCategoryId());
+        Product product = new Product(
+                "Low Stock Product", "Description", new Money(new BigDecimal("50.00"), "BRL"), 1, newCategoryId());
         Product created = productService.create(product);
         String productId = created.id.toString();
 
         OrderCreatedEvent.OrderItemEvent item = new OrderCreatedEvent.OrderItemEvent(
-                productId, "Low Stock Product", 5, new Money(new BigDecimal("50.00"), "BRL"), new Money(new BigDecimal("250.00"), "BRL"));
+                productId,
+                "Low Stock Product",
+                5,
+                new Money(new BigDecimal("50.00"), "BRL"),
+                new Money(new BigDecimal("250.00"), "BRL"));
         OrderCreatedEvent event = new OrderCreatedEvent(
-                42L, "Customer", "customer@example.com", "CONFIRMED", new Money(new BigDecimal("250.00"), "BRL"), List.of(item), LocalDateTime.now());
+                42L,
+                "Customer",
+                "customer@example.com",
+                "CONFIRMED",
+                new Money(new BigDecimal("250.00"), "BRL"),
+                List.of(item),
+                LocalDateTime.now());
         String eventJson = objectMapper.writeValueAsString(event);
 
         try (KafkaProducer<String, String> producer = createProducer()) {
             producer.send(new ProducerRecord<>("outbox.event.Order", productId, eventJson));
         }
 
-        assertTrue(waitForDlqMessage(productId),
+        assertTrue(
+                waitForDlqMessage(productId),
                 "Expected an event that exhausts stock-decrease retries to be routed to the DLQ topic");
 
         Product unchanged = productService.findById(productId);
@@ -102,7 +113,9 @@ public class OrderEventDeadLetterQueueTest {
 
     private KafkaProducer<String, String> createProducer() {
         Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
+        props.put(
+                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         return new KafkaProducer<>(props);
@@ -110,7 +123,9 @@ public class OrderEventDeadLetterQueueTest {
 
     private KafkaConsumer<String, String> createConsumer() {
         Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
+        props.put(
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "dlq-test-" + UUID.randomUUID());

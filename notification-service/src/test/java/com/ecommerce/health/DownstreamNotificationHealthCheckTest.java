@@ -11,8 +11,7 @@ class DownstreamNotificationHealthCheckTest {
 
     @Test
     void readiness_reportsDownstreamsAsDisabled_whenNotConfigured() {
-        given()
-                .when()
+        given().when()
                 .get("/q/health/ready")
                 .then()
                 .body("checks.find { it.name == 'notification-downstreams' }.status", is("UP"))

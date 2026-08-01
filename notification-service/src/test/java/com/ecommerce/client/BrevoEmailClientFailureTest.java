@@ -1,5 +1,8 @@
 package com.ecommerce.client;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.ecommerce.dto.BrevoEmailRequest;
 import com.ecommerce.dto.BrevoEmailResponse;
 import com.sun.net.httpserver.HttpServer;
@@ -7,18 +10,14 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(BrevoEmailClientFailureTest.FailingBrevoProfile.class)
@@ -70,8 +69,7 @@ public class BrevoEmailClientFailureTest {
             return Map.of(
                     "brevo.api.key", "test-api-key",
                     "brevo.api.url", "http://localhost:" + PORT,
-                    "notification.email.enabled", "true"
-            );
+                    "notification.email.enabled", "true");
         }
     }
 }

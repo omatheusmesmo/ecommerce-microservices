@@ -6,13 +6,12 @@ import io.quarkiverse.httpproblem.HttpProblem;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.server.ServerRequestFilter;
-
 import java.time.Duration;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 
 /**
  * Per-IP rate limiting for /auth/login and /auth/register, the only unauthenticated
@@ -46,7 +45,8 @@ public class LoginRateLimitFilter {
         }
 
         String clientIp = clientIp(routingContext);
-        Bucket bucket = buckets.computeIfAbsent(clientIp, ip -> Bucket.builder().addLimit(limit).build());
+        Bucket bucket = buckets.computeIfAbsent(
+                clientIp, ip -> Bucket.builder().addLimit(limit).build());
 
         if (bucket.tryConsume(1)) {
             return null;

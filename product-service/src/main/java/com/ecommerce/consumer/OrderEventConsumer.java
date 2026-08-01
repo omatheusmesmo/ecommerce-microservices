@@ -49,8 +49,9 @@ public class OrderEventConsumer {
             }
         } catch (Exception e) {
             LOG.errorf(e, "[KAFKA] Failed to parse Order.events message: %s", message);
-            return Uni.createFrom().completionStage(
-                    kafkaMessage.nack(new IllegalArgumentException("Failed to parse Order.events message: " + message, e)));
+            return Uni.createFrom()
+                    .completionStage(kafkaMessage.nack(
+                            new IllegalArgumentException("Failed to parse Order.events message: " + message, e)));
         }
 
         if (jsonNode.has("items") && jsonNode.has("customerName")) {
@@ -62,8 +63,9 @@ public class OrderEventConsumer {
                 }
             } catch (Exception e) {
                 LOG.errorf(e, "[KAFKA] Failed to process Order.events message: %s", message);
-                return Uni.createFrom().completionStage(
-                        kafkaMessage.nack(new IllegalStateException("Failed to process Order.events message: " + message, e)));
+                return Uni.createFrom()
+                        .completionStage(kafkaMessage.nack(
+                                new IllegalStateException("Failed to process Order.events message: " + message, e)));
             }
         } else {
             LOG.debugf("[KAFKA] Ignoring non-OrderCreated event from Order.events");
@@ -74,7 +76,8 @@ public class OrderEventConsumer {
     }
 
     private String eventKeyOf(Message<String> kafkaMessage) {
-        IncomingKafkaRecordMetadata<?, ?> metadata = kafkaMessage.getMetadata(IncomingKafkaRecordMetadata.class)
+        IncomingKafkaRecordMetadata<?, ?> metadata = kafkaMessage
+                .getMetadata(IncomingKafkaRecordMetadata.class)
                 .orElseThrow(() -> new IllegalStateException("Missing Kafka record metadata"));
         return metadata.getTopic() + "-" + metadata.getPartition() + "-" + metadata.getOffset();
     }
@@ -95,7 +98,8 @@ public class OrderEventConsumer {
     }
 
     private void handleOrderCreated(OrderCreatedEvent event) {
-        LOG.infof("[KAFKA] Processing OrderCreated event: orderId=%d, customer=%s, total=%s",
+        LOG.infof(
+                "[KAFKA] Processing OrderCreated event: orderId=%d, customer=%s, total=%s",
                 event.orderId(), event.customerName(), event.totalAmount());
 
         for (var item : event.items()) {
@@ -103,7 +107,11 @@ public class OrderEventConsumer {
                 productService.decreaseStock(item.productId(), item.quantity());
                 LOG.infof("[KAFKA] Stock decreased for product %s: -%d", item.productId(), item.quantity());
             } catch (Exception e) {
-                LOG.errorf(e, "[KAFKA] Failed to decrease stock for product %s in order %d", item.productId(), event.orderId());
+                LOG.errorf(
+                        e,
+                        "[KAFKA] Failed to decrease stock for product %s in order %d",
+                        item.productId(),
+                        event.orderId());
                 throw e;
             }
         }
@@ -111,9 +119,9 @@ public class OrderEventConsumer {
         LOG.infof("[KAFKA] OrderCreated event processed successfully: orderId=%d", event.orderId());
     }
 
-
     private void handleOrderCancelled(OrderCancelledEvent event) {
-        LOG.infof("[KAFKA] Processing OrderCancelled event: orderId=%d, customer=%s, total=%s",
+        LOG.infof(
+                "[KAFKA] Processing OrderCancelled event: orderId=%d, customer=%s, total=%s",
                 event.orderId(), event.customerName(), event.totalAmount());
 
         for (var item : event.items()) {
@@ -121,7 +129,11 @@ public class OrderEventConsumer {
                 productService.increaseStock(item.productId(), item.quantity());
                 LOG.infof("[KAFKA] Stock increased for product %s: +%d", item.productId(), item.quantity());
             } catch (Exception e) {
-                LOG.errorf(e, "[KAFKA] Failed to increase stock for product %s in cancelled order %d", item.productId(), event.orderId());
+                LOG.errorf(
+                        e,
+                        "[KAFKA] Failed to increase stock for product %s in cancelled order %d",
+                        item.productId(),
+                        event.orderId());
                 throw e;
             }
         }

@@ -7,10 +7,9 @@ import com.ecommerce.enums.NotificationChannel;
 import com.ecommerce.enums.OrderStatus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 import java.math.BigDecimal;
 import java.util.Map;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class EmailNotificationProvider extends AbstractNotificationProvider {

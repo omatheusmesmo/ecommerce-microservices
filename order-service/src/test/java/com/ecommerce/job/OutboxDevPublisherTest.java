@@ -1,8 +1,16 @@
 package com.ecommerce.job;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.ecommerce.entity.OutboxEvent;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.transaction.Transactional;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.function.Predicate;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -10,15 +18,6 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
-
-import java.time.Duration;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.UUID;
-import java.util.function.Predicate;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 class OutboxDevPublisherTest {
@@ -64,7 +63,9 @@ class OutboxDevPublisherTest {
 
     private KafkaConsumer<String, String> createConsumer(String groupId) {
         Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
+        props.put(
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());

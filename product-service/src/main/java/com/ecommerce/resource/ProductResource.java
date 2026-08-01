@@ -20,10 +20,9 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.jboss.logging.Logger;
-
 import java.util.List;
 import java.util.NoSuchElementException;
+import org.jboss.logging.Logger;
 
 @Path("/products")
 @Produces(MediaType.APPLICATION_JSON)
@@ -120,7 +119,8 @@ public class ProductResource {
     @PUT
     @Path("/{id}/variants/{sku}")
     @RolesAllowed({"ADMIN", "SELLER"})
-    public Response updateVariant(@PathParam("id") String id, @PathParam("sku") String sku, @Valid ProductVariant variant) {
+    public Response updateVariant(
+            @PathParam("id") String id, @PathParam("sku") String sku, @Valid ProductVariant variant) {
         LOG.infof("PUT /products/%s/variants/%s - Updating variant", id, sku);
         ProductVariant updated = productService.updateVariant(id, sku, variant);
         return Response.ok(updated).build();

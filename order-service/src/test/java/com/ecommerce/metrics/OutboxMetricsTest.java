@@ -38,7 +38,8 @@ class OutboxMetricsTest {
         outboxMetrics.refresh();
 
         assertEquals(2.0, registry.get("outbox.pending.events").gauge().value());
-        assertTrue(registry.get("outbox.oldest.event.age.seconds").gauge().value() >= 300,
+        assertTrue(
+                registry.get("outbox.oldest.event.age.seconds").gauge().value() >= 300,
                 "oldest event age should reflect the 5-minute-old row");
     }
 
@@ -49,6 +50,7 @@ class OutboxMetricsTest {
         outboxMetrics.refresh();
 
         assertEquals(0.0, registry.get("outbox.pending.events").gauge().value());
-        assertEquals(0.0, registry.get("outbox.oldest.event.age.seconds").gauge().value());
+        assertEquals(
+                0.0, registry.get("outbox.oldest.event.age.seconds").gauge().value());
     }
 }

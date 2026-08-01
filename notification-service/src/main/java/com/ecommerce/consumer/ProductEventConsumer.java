@@ -19,16 +19,14 @@ public class ProductEventConsumer {
 
     @Incoming("product-created")
     @Blocking
-    public void onProductCreated(ProductCreatedEvent event){
-        try{
-            LOG.infof("[KAFKA] Received product-created event:  productId=%s, name=%s, price=R$%.2f",
+    public void onProductCreated(ProductCreatedEvent event) {
+        try {
+            LOG.infof(
+                    "[KAFKA] Received product-created event:  productId=%s, name=%s, price=R$%.2f",
                     event.productId(), event.name(), event.price().amount());
 
             notificationService.notifyProductCreated(
-                    event.productId(),
-                    event.name(),
-                    event.price().amount()
-            );
+                    event.productId(), event.name(), event.price().amount());
 
             LOG.infof("[KAFKA] Product-created event processed successfully: productId=%s", event.productId());
         } catch (Exception e) {
@@ -38,18 +36,14 @@ public class ProductEventConsumer {
 
     @Incoming("stock-changed")
     @Blocking
-    public void onStockChanged(StockChangedEvent event){
+    public void onStockChanged(StockChangedEvent event) {
         try {
-            LOG.infof("[KAFKA] Received stock-changed event: productId=%s, stock %d → %d (%s)",
+            LOG.infof(
+                    "[KAFKA] Received stock-changed event: productId=%s, stock %d → %d (%s)",
                     event.productId(), event.oldStock(), event.newStock(), event.reason());
 
             notificationService.notifyStockChanged(
-                    event.productId(),
-                    event.productName(),
-                    event.oldStock(),
-                    event.newStock(),
-                    event.reason()
-            );
+                    event.productId(), event.productName(), event.oldStock(), event.newStock(), event.reason());
 
             LOG.infof("[KAFKA] Stock-changed event processed successfully: productId=%s", event.productId());
         } catch (Exception e) {

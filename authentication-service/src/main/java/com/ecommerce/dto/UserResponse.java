@@ -6,22 +6,8 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import java.time.LocalDateTime;
 
 @RegisterForReflection
-public record UserResponse(
-        Long id,
-        String email,
-        String fullName,
-        Role role,
-        boolean active,
-        LocalDateTime createdAt
-) {
+public record UserResponse(Long id, String email, String fullName, Role role, boolean active, LocalDateTime createdAt) {
     public static UserResponse from(User user) {
-        return new UserResponse(
-                user.id,
-                user.email,
-                user.fullName,
-                user.role,
-                user.active,
-                user.createdAt
-        );
+        return new UserResponse(user.id, user.email, user.fullName, user.role, user.active, user.createdAt);
     }
 }

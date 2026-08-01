@@ -14,8 +14,7 @@ class ProblemDetailsIntegrationTest {
 
     @Test
     void unknownProduct_returnsProblemJson404() {
-        given()
-                .when()
+        given().when()
                 .get("/products/000000000000000000000000")
                 .then()
                 .statusCode(404)
@@ -28,8 +27,7 @@ class ProblemDetailsIntegrationTest {
 
     @Test
     void unmatchedRoute_returnsProblemJson404() {
-        given()
-                .when()
+        given().when()
                 .get("/does-not-exist")
                 .then()
                 .statusCode(404)
@@ -40,8 +38,7 @@ class ProblemDetailsIntegrationTest {
 
     @Test
     void invalidQueryParameter_returnsProblemJsonWithViolations() {
-        given()
-                .when()
+        given().when()
                 .get("/products?page=-1")
                 .then()
                 .statusCode(400)

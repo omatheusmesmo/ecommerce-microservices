@@ -1,44 +1,43 @@
 package com.ecommerce.messaging;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import com.ecommerce.entity.Category;
 import com.ecommerce.entity.Product;
-import com.ecommerce.valueobject.Money;
 import com.ecommerce.event.ProductCreatedEvent;
 import com.ecommerce.event.ProductDeletedEvent;
 import com.ecommerce.event.ProductUpdatedEvent;
 import com.ecommerce.event.StockChangedEvent;
 import com.ecommerce.repository.CategoryRepository;
 import com.ecommerce.service.ProductService;
+import com.ecommerce.valueobject.Money;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.reactive.messaging.annotations.Merge;
 import io.smallrye.reactive.messaging.kafka.Record;
-import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
-import io.smallrye.reactive.messaging.kafka.api.OutgoingKafkaRecordMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.reactive.messaging.Incoming;
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 public class ProductEventProducerTest {
 
     @Inject
     ProductService productService;
+
     @Inject
     CategoryRepository categoryRepository;
+
     @Inject
     TestEventConsumer testEventConsumer;
 
@@ -54,7 +53,8 @@ public class ProductEventProducerTest {
 
     @Test
     public void shouldPublishProductCreatedEvent() {
-        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, categoryId);
+        Product product =
+                new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, categoryId);
 
         product = productService.create(product);
 
@@ -66,9 +66,11 @@ public class ProductEventProducerTest {
 
     @Test
     public void shouldPublishProductUpdatedEvent() {
-        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, categoryId);
+        Product product =
+                new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, categoryId);
         productService.create(product);
-        Product updatedProduct = new Product("Updated Product", "Updated Description", new Money(new BigDecimal("15.00"), "BRL"), 3, categoryId);
+        Product updatedProduct = new Product(
+                "Updated Product", "Updated Description", new Money(new BigDecimal("15.00"), "BRL"), 3, categoryId);
         productService.update(product.id.toString(), updatedProduct);
 
         Record<String, ProductUpdatedEvent> received = testEventConsumer.pollUpdated(5, SECONDS);
@@ -79,7 +81,8 @@ public class ProductEventProducerTest {
 
     @Test
     public void shouldPublishProductDeletedEvent() {
-        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, categoryId);
+        Product product =
+                new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, categoryId);
         productService.create(product);
 
         productService.delete(product.id.toString());
@@ -92,7 +95,8 @@ public class ProductEventProducerTest {
 
     @Test
     public void shouldPublishStockChangedEvent() {
-        Product product = new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, categoryId);
+        Product product =
+                new Product("Test Product", "Description", new Money(new BigDecimal("10.00"), "BRL"), 10, categoryId);
         product = productService.create(product);
 
         productService.decreaseStock(product.id.toString(), 5);

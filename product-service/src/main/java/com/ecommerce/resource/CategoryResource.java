@@ -12,10 +12,9 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
-import org.jboss.logging.Logger;
-
 import java.util.List;
 import java.util.NoSuchElementException;
+import org.jboss.logging.Logger;
 
 @Path("/categories")
 public class CategoryResource {

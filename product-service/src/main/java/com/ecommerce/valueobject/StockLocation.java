@@ -6,9 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record StockLocation(
-
-        @NotBlank(message = "Location ID is required")
-        String locationId,
+        @NotBlank(message = "Location ID is required") String locationId,
 
         @NotNull(message = "Quantity on hand is required")
         @Min(value = 0, message = "Quantity on hand must be greater than or equal to zero")
@@ -16,8 +14,7 @@ public record StockLocation(
 
         @NotNull(message = "Reserved quantity is required")
         @Min(value = 0, message = "Reserved quantity must be greater than or equal to zero")
-        Integer quantityReserved
-) {
+        Integer quantityReserved) {
 
     public static final String DEFAULT_LOCATION_ID = "DEFAULT";
 

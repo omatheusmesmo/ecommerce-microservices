@@ -1,5 +1,12 @@
 package com.ecommerce.service;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.ecommerce.dto.RegisterRequest;
 import com.ecommerce.dto.UserResponse;
 import com.ecommerce.entity.Role;
@@ -8,16 +15,8 @@ import com.ecommerce.repository.UserRepository;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-import org.junit.jupiter.api.Test;
-
 import java.util.NoSuchElementException;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 class UserServiceTest {
@@ -42,8 +41,7 @@ class UserServiceTest {
     @Test
     @TestTransaction
     void register_newEmail_persistsInactiveUser() {
-        UserResponse response = userService.register(
-                new RegisterRequest("new@example.com", "Passw0rd!23", "New User"));
+        UserResponse response = userService.register(new RegisterRequest("new@example.com", "Passw0rd!23", "New User"));
 
         assertNotNull(response);
         assertEquals("new@example.com", response.email());
@@ -56,8 +54,9 @@ class UserServiceTest {
     void register_existingEmail_throwsIllegalArgumentException() {
         persistUser("taken@example.com", Role.CUSTOMER);
 
-        assertThrows(IllegalArgumentException.class, () -> userService.register(
-                new RegisterRequest("taken@example.com", "Passw0rd!23", "Someone")));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.register(new RegisterRequest("taken@example.com", "Passw0rd!23", "Someone")));
     }
 
     @Test
@@ -87,8 +86,7 @@ class UserServiceTest {
     void promote_targetNotFound_throwsIllegalArgumentException() {
         Long adminId = persistUser("admin2@example.com", Role.ADMIN);
 
-        assertThrows(IllegalArgumentException.class,
-                () -> userService.promote(Long.MAX_VALUE, Role.SELLER, adminId));
+        assertThrows(IllegalArgumentException.class, () -> userService.promote(Long.MAX_VALUE, Role.SELLER, adminId));
     }
 
     @Test

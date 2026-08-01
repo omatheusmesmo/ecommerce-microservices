@@ -52,8 +52,9 @@ class OrderOptimisticLockingTest {
 
         orderService.updateStatus(id, OrderStatus.CONFIRMED);
 
-        assertThrows(OptimisticLockException.class, () ->
-                QuarkusTransaction.requiringNew().run(() -> {
+        assertThrows(
+                OptimisticLockException.class,
+                () -> QuarkusTransaction.requiringNew().run(() -> {
                     stale.status = OrderStatus.SHIPPED;
                     orderRepository.getEntityManager().merge(stale);
                     orderRepository.getEntityManager().flush();

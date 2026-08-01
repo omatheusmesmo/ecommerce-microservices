@@ -1,8 +1,17 @@
 package com.ecommerce.consumer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -11,16 +20,6 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.Properties;
-import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.logging.Handler;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 public class DeadLetterQueueConsumerTest {
@@ -40,12 +39,10 @@ public class DeadLetterQueueConsumerTest {
         }
 
         @Override
-        public void flush() {
-        }
+        public void flush() {}
 
         @Override
-        public void close() {
-        }
+        public void close() {}
     };
 
     @BeforeEach
@@ -66,7 +63,8 @@ public class DeadLetterQueueConsumerTest {
             producer.send(new ProducerRecord<>("outbox.event.Order.dlq", "key", "payload-" + marker));
         }
 
-        assertTrue(waitForLogContaining(marker, 10_000),
+        assertTrue(
+                waitForLogContaining(marker, 10_000),
                 "Expected DeadLetterQueueConsumer to log the order-events DLQ payload");
     }
 
@@ -78,17 +76,20 @@ public class DeadLetterQueueConsumerTest {
             producer.send(new ProducerRecord<>("authentication-email.dlq", "key", "payload-" + marker));
         }
 
-        assertTrue(waitForLogContaining(marker, 10_000),
+        assertTrue(
+                waitForLogContaining(marker, 10_000),
                 "Expected DeadLetterQueueConsumer to log the authentication-email DLQ payload");
     }
 
     @Test
     public void onDeadLetterMessage_incrementsDlqCounterBySource() {
-        double before = registry.counter("notification.dlq.messages", "source", "order-events").count();
+        double before = registry.counter("notification.dlq.messages", "source", "order-events")
+                .count();
 
         consumer.onDeadLetterMessage("payload-" + UUID.randomUUID());
 
-        double after = registry.counter("notification.dlq.messages", "source", "order-events").count();
+        double after = registry.counter("notification.dlq.messages", "source", "order-events")
+                .count();
         assertEquals(before + 1, after);
     }
 
@@ -112,7 +113,9 @@ public class DeadLetterQueueConsumerTest {
 
     private KafkaProducer<String, String> createProducer() {
         Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
+        props.put(
+                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         return new KafkaProducer<>(props);

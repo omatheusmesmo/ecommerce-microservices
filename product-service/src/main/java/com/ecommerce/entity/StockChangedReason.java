@@ -1,6 +1,6 @@
 package com.ecommerce.entity;
 
-public enum StockChangedReason{
+public enum StockChangedReason {
     PURCHASE,
     RESTOCK,
     ADJUSTMENT,

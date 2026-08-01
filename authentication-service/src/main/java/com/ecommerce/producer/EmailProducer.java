@@ -1,12 +1,12 @@
 package com.ecommerce.producer;
 
-import com.ecommerce.event.TokenUrlEvent;
 import com.ecommerce.event.TokenConfirmationEvent;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
+import com.ecommerce.event.TokenUrlEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped

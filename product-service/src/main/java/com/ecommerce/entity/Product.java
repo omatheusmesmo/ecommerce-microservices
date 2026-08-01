@@ -4,13 +4,11 @@ import com.ecommerce.valueobject.Money;
 import com.ecommerce.valueobject.StockLocation;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
-
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,14 +41,19 @@ public class Product extends PanacheMongoEntity {
     @Valid
     public List<ProductVariant> variants = new ArrayList<>();
 
-    public Product() {
-    }
+    public Product() {}
 
     public Product(String name, String description, Money price, Integer stock, String categoryId) {
-        this(name, description, price, List.of(new StockLocation(StockLocation.DEFAULT_LOCATION_ID, stock, 0)), categoryId);
+        this(
+                name,
+                description,
+                price,
+                List.of(new StockLocation(StockLocation.DEFAULT_LOCATION_ID, stock, 0)),
+                categoryId);
     }
 
-    public Product(String name, String description, Money price, List<StockLocation> stockLocations, String categoryId) {
+    public Product(
+            String name, String description, Money price, List<StockLocation> stockLocations, String categoryId) {
         this.name = name;
         this.description = description;
         this.price = price;

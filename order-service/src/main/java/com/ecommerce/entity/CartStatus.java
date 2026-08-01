@@ -1,7 +1,6 @@
 package com.ecommerce.entity;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
-
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;

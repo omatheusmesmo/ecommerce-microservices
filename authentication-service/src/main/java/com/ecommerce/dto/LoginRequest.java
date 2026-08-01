@@ -6,6 +6,4 @@ import jakarta.validation.constraints.NotBlank;
 
 @RegisterForReflection
 public record LoginRequest(
-        @NotBlank @Email String email,
-        @NotBlank String password
-) {}
+        @NotBlank @Email String email, @NotBlank String password) {}

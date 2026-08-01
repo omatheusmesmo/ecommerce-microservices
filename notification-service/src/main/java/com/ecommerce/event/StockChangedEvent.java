@@ -11,6 +11,4 @@ public record StockChangedEvent(
         Integer oldStock,
         Integer newStock,
         StockChangeReason reason,
-        LocalDateTime changedAt
-) {}
-
+        LocalDateTime changedAt) {}

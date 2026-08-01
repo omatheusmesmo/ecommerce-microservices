@@ -27,8 +27,8 @@ class GlobalExceptionMapperTest {
 
     @Test
     void wrappedStaleStateException_mapsTo409() {
-        HttpProblem problem = mapper.toProblem(
-                new RuntimeException("commit failed", new StaleObjectStateException("Order", 1L)));
+        HttpProblem problem =
+                mapper.toProblem(new RuntimeException("commit failed", new StaleObjectStateException("Order", 1L)));
         assertEquals(Response.Status.CONFLICT.getStatusCode(), problem.getStatusCode());
     }
 

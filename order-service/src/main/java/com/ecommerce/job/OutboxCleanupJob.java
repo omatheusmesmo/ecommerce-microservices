@@ -5,9 +5,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
-import org.jboss.logging.Logger;
-
 import java.time.LocalDateTime;
+import org.jboss.logging.Logger;
 
 /**
  * Scheduled cleanup of the outbox table. Debezium reads outbox rows via CDC and
@@ -35,7 +34,8 @@ public class OutboxCleanupJob {
 
     int deleteEventsOlderThan(int retentionDays) {
         LocalDateTime threshold = LocalDateTime.now().minusDays(retentionDays);
-        return entityManager.createQuery("DELETE FROM OutboxEvent o WHERE o.createdAt < :threshold")
+        return entityManager
+                .createQuery("DELETE FROM OutboxEvent o WHERE o.createdAt < :threshold")
                 .setParameter("threshold", threshold)
                 .executeUpdate();
     }

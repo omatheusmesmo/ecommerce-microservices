@@ -12,8 +12,7 @@ class ProblemDetailsIntegrationTest {
 
     @Test
     void unmatchedRoute_returnsProblemJson404() {
-        given()
-                .when()
+        given().when()
                 .get("/does-not-exist")
                 .then()
                 .statusCode(404)
@@ -24,8 +23,7 @@ class ProblemDetailsIntegrationTest {
 
     @Test
     void unauthenticatedRequest_returnsProblemJson401() {
-        given()
-                .when()
+        given().when()
                 .get("/orders")
                 .then()
                 .statusCode(401)
@@ -37,8 +35,7 @@ class ProblemDetailsIntegrationTest {
     @Test
     @TestSecurity(user = "customer1", roles = "CUSTOMER")
     void unknownOrder_returnsProblemJson404() {
-        given()
-                .when()
+        given().when()
                 .get("/orders/999999")
                 .then()
                 .statusCode(404)

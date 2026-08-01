@@ -27,8 +27,7 @@ class OrderServiceTimeoutTest {
         public Map<String, String> getConfigOverrides() {
             return Map.of(
                     "com.ecommerce.service.OrderService/findAll/Timeout/value", "1",
-                    "com.ecommerce.service.OrderService/findAll/Timeout/unit", "MILLIS"
-            );
+                    "com.ecommerce.service.OrderService/findAll/Timeout/unit", "MILLIS");
         }
     }
 }

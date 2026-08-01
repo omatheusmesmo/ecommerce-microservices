@@ -7,14 +7,13 @@ import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.resteasy.reactive.server.ServerRequestFilter;
-
 import java.time.Duration;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 
 /**
  * Per-IP rate limiting for the public, unbounded product read endpoints
@@ -33,14 +32,17 @@ public class ProductReadRateLimitFilter {
 
     @ServerRequestFilter
     public Response filter(ContainerRequestContext requestContext, RoutingContext routingContext) {
-        if (!"GET".equals(requestContext.getMethod()) || !isListEndpoint(requestContext.getUriInfo().getPath())) {
+        if (!"GET".equals(requestContext.getMethod())
+                || !isListEndpoint(requestContext.getUriInfo().getPath())) {
             return null;
         }
 
         String clientIp = clientIp(routingContext);
-        Bucket bucket = buckets.computeIfAbsent(clientIp, ip -> Bucket.builder()
-                .addLimit(Bandwidth.simple(readsPerMinute, Duration.ofMinutes(1)))
-                .build());
+        Bucket bucket = buckets.computeIfAbsent(
+                clientIp,
+                ip -> Bucket.builder()
+                        .addLimit(Bandwidth.simple(readsPerMinute, Duration.ofMinutes(1)))
+                        .build());
 
         if (bucket.tryConsume(1)) {
             return null;
@@ -54,9 +56,7 @@ public class ProductReadRateLimitFilter {
 
     private boolean isListEndpoint(String path) {
         String p = path.startsWith("/") ? path.substring(1) : path;
-        return p.equals("products")
-                || p.equals("products/active")
-                || p.startsWith("products/category/");
+        return p.equals("products") || p.equals("products/active") || p.startsWith("products/category/");
     }
 
     private String clientIp(RoutingContext routingContext) {

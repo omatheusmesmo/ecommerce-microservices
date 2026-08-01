@@ -1,7 +1,6 @@
 package com.ecommerce.valueobject;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
-
 import java.math.BigDecimal;
 
 @RegisterForReflection

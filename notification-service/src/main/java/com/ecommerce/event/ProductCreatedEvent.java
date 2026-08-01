@@ -6,10 +6,4 @@ import java.time.LocalDateTime;
 
 @RegisterForReflection
 public record ProductCreatedEvent(
-        String productId,
-        String name,
-        String categoryId,
-        Money price,
-        Integer stock,
-        LocalDateTime createdAt
-) {}
+        String productId, String name, String categoryId, Money price, Integer stock, LocalDateTime createdAt) {}

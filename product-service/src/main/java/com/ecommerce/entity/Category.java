@@ -2,7 +2,6 @@ package com.ecommerce.entity;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.common.MongoEntity;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
@@ -18,8 +17,7 @@ public class Category extends PanacheMongoEntity {
 
     public LocalDateTime createdAt = LocalDateTime.now();
 
-    public Category() {
-    }
+    public Category() {}
 
     public Category(String name, String parentId) {
         this.name = name;

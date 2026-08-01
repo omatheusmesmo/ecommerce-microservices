@@ -29,8 +29,7 @@ public class DownstreamNotificationHealthCheck implements HealthCheck {
                 .withData("discord", discord.name())
                 .withData("brevo", brevo.name());
 
-        boolean healthy = discord != ReachabilityStatus.UNREACHABLE
-                && brevo != ReachabilityStatus.UNREACHABLE;
+        boolean healthy = discord != ReachabilityStatus.UNREACHABLE && brevo != ReachabilityStatus.UNREACHABLE;
 
         return healthy ? response.up().build() : response.down().build();
     }

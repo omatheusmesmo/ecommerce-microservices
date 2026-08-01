@@ -6,25 +6,25 @@ import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
-import org.eclipse.microprofile.faulttolerance.Timeout;
-import org.jboss.logging.Logger;
-
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
+import org.eclipse.microprofile.faulttolerance.Timeout;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class DiscordWebhookClient {
 
-    private final static Logger LOG = Logger.getLogger(DiscordWebhookClient.class);
+    private static final Logger LOG = Logger.getLogger(DiscordWebhookClient.class);
 
     @ConfigProperty(name = "discord.webhook.url")
     Optional<String> webhookUrl;
+
     @ConfigProperty(name = "discord.webhook.enabled", defaultValue = "true")
     boolean enabled;
 
@@ -36,51 +36,52 @@ public class DiscordWebhookClient {
 
     @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     @CircuitBreaker(requestVolumeThreshold = 4, failureRatio = 0.5, delay = 10, delayUnit = ChronoUnit.SECONDS)
-    public void sendMessage(String content){
-        if (!isDiscordReady()){
+    public void sendMessage(String content) {
+        if (!isDiscordReady()) {
             return;
         }
 
-        try{
-            Map<String, Object> payload = Map.of("content",content);
+        try {
+            Map<String, Object> payload = Map.of("content", content);
 
             Response response = client.target(webhookUrl.get())
                     .request(MediaType.APPLICATION_JSON)
                     .post(Entity.json(payload));
 
-            if(response.getStatus()==204){
+            if (response.getStatus() == 204) {
                 LOG.debugf("Discord message sent: %s", truncate(content, 50));
-            }else {
+            } else {
                 LOG.warnf("Discord returned status %d", response.getStatus());
             }
 
             response.close();
-        }catch (Exception e){
+        } catch (Exception e) {
             LOG.errorf(e, "Failed to send Discord message");
         }
     }
 
     @Timeout(value = 5, unit = ChronoUnit.SECONDS)
     @CircuitBreaker(requestVolumeThreshold = 4, failureRatio = 0.5, delay = 10, delayUnit = ChronoUnit.SECONDS)
-    public void sendRichMessage(String title, String description, String color, List<Field> fields){
-        if (!isDiscordReady()){
+    public void sendRichMessage(String title, String description, String color, List<Field> fields) {
+        if (!isDiscordReady()) {
             return;
         }
 
-        try{
+        try {
             LOG.debugf("Sending Discord rich message: title=%s, color=%s, fields=%d", title, color, fields.size());
 
             Map<String, Object> embed = Map.of(
                     "title", title,
                     "description", description,
                     "color", parseColor(color),
-                    "fields", fields.stream().map(f -> Map.of(
-                            "name", f.name(),
-                            "value", f.value(),
-                            "inline", f.inline()
-                    )).toList(),
-                    "timestamp", Instant.now().toString()
-            );
+                    "fields",
+                            fields.stream()
+                                    .map(f -> Map.of(
+                                            "name", f.name(),
+                                            "value", f.value(),
+                                            "inline", f.inline()))
+                                    .toList(),
+                    "timestamp", Instant.now().toString());
 
             Map<String, Object> payload = Map.of("embeds", List.of(embed));
 
@@ -117,13 +118,13 @@ public class DiscordWebhookClient {
         }
     }
 
-    private boolean isDiscordReady(){
-        if (!isConfigured()){
+    private boolean isDiscordReady() {
+        if (!isConfigured()) {
             LOG.debug("Discord webhook not configured");
             return false;
         }
 
-        if (!enabled){
+        if (!enabled) {
             LOG.debug("Discord webhook is disabled");
             return false;
         }

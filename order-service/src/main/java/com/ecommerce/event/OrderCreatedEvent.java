@@ -15,8 +15,7 @@ public record OrderCreatedEvent(
         Money totalAmount,
         Money shippingCost,
         List<OrderItemEvent> items,
-        LocalDateTime createdAt
-) {
+        LocalDateTime createdAt) {
     public static OrderCreatedEvent from(OrderResponse orderResponse) {
         return new OrderCreatedEvent(
                 orderResponse.id(),
@@ -25,10 +24,7 @@ public record OrderCreatedEvent(
                 orderResponse.status().name(),
                 orderResponse.totalAmount(),
                 orderResponse.shippingCost(),
-                orderResponse.items().stream()
-                        .map(OrderItemEvent::from)
-                        .toList(),
-                orderResponse.createdAt()
-        );
+                orderResponse.items().stream().map(OrderItemEvent::from).toList(),
+                orderResponse.createdAt());
     }
 }

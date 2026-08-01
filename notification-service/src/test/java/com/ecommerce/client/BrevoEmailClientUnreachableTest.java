@@ -1,17 +1,16 @@
 package com.ecommerce.client;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.ecommerce.dto.BrevoEmailRequest;
 import com.ecommerce.dto.BrevoEmailResponse;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
-import org.junit.jupiter.api.Test;
-
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(BrevoEmailClientUnreachableTest.UnreachableBrevoProfile.class)
@@ -40,8 +39,7 @@ public class BrevoEmailClientUnreachableTest {
             return Map.of(
                     "brevo.api.key", "test-api-key",
                     "brevo.api.url", "http://localhost:18585",
-                    "notification.email.enabled", "true"
-            );
+                    "notification.email.enabled", "true");
         }
     }
 }

@@ -8,10 +8,9 @@ import com.ecommerce.util.CryptoUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class UserActionTokenService {
@@ -54,7 +53,13 @@ public class UserActionTokenService {
 
     public UserActionToken findByToken(String rawToken, ActionType actionType) {
         String hashed = CryptoUtil.hashToken(rawToken);
-        return repository.find("hashedToken = ?1 and actionType = ?2 and expiresAt > ?3", hashed, actionType, LocalDateTime.now()).firstResult();
+        return repository
+                .find(
+                        "hashedToken = ?1 and actionType = ?2 and expiresAt > ?3",
+                        hashed,
+                        actionType,
+                        LocalDateTime.now())
+                .firstResult();
     }
 
     public String getRawToken(UserActionToken token) {

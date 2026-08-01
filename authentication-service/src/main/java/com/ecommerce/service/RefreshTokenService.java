@@ -6,7 +6,6 @@ import com.ecommerce.util.CryptoUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -37,7 +36,9 @@ public class RefreshTokenService {
 
     public RefreshToken findByToken(String rawToken) {
         String hashed = CryptoUtil.hashToken(rawToken);
-        return repository.find("hashedToken = ?1 and revoked = false and expiresAt > ?2", hashed, LocalDateTime.now()).firstResult();
+        return repository
+                .find("hashedToken = ?1 and revoked = false and expiresAt > ?2", hashed, LocalDateTime.now())
+                .firstResult();
     }
 
     public String getRawToken(RefreshToken token) {

@@ -2,9 +2,8 @@ package com.ecommerce.entity;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntityBase;
 import io.quarkus.mongodb.panache.common.MongoEntity;
-import org.bson.codecs.pojo.annotations.BsonId;
-
 import java.time.LocalDateTime;
+import org.bson.codecs.pojo.annotations.BsonId;
 
 @MongoEntity(collection = "processed_order_events")
 public class ProcessedOrderEvent extends PanacheMongoEntityBase {
@@ -14,8 +13,7 @@ public class ProcessedOrderEvent extends PanacheMongoEntityBase {
 
     public LocalDateTime processedAt = LocalDateTime.now();
 
-    public ProcessedOrderEvent() {
-    }
+    public ProcessedOrderEvent() {}
 
     public ProcessedOrderEvent(String id) {
         this.id = id;

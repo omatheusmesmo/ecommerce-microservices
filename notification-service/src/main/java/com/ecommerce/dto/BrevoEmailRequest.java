@@ -1,48 +1,37 @@
 package com.ecommerce.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation. Valid;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-
 import java.util.List;
 import java.util.Map;
 
 public record BrevoEmailRequest(
-        @NotNull(message = "Sender is required")
-        @Valid
-        @JsonProperty("sender")
+        @NotNull(message = "Sender is required") @Valid @JsonProperty("sender")
         Sender sender,
 
-        @NotEmpty(message = "At least one recipient is required")
-        @JsonProperty("to")
+        @NotEmpty(message = "At least one recipient is required") @JsonProperty("to")
         List<@Valid Recipient> to,
 
-        @NotBlank(message = "Subject is required")
-        @JsonProperty("subject")
+        @NotBlank(message = "Subject is required") @JsonProperty("subject")
         String subject,
 
-        @JsonProperty("htmlContent")
-        String htmlContent,
+        @JsonProperty("htmlContent") String htmlContent,
 
-        @JsonProperty("textContent")
-        String textContent,
+        @JsonProperty("textContent") String textContent,
 
-        @JsonProperty("params")
-        Map<String, Object> params
-) {
+        @JsonProperty("params") Map<String, Object> params) {
     public record Sender(
-            @NotBlank(message = "Sender name is required")
-            @JsonProperty("name")
+            @NotBlank(message = "Sender name is required") @JsonProperty("name")
             String name,
 
             @NotBlank(message = "Sender email is required")
             @Email(message = "Invalid sender email format")
             @JsonProperty("email")
-            String email
-    ) {}
+            String email) {}
 
     public record Recipient(
             @NotBlank(message = "Recipient email is required")
@@ -50,9 +39,7 @@ public record BrevoEmailRequest(
             @JsonProperty("email")
             String email,
 
-            @JsonProperty("name")
-            String name
-    ) {}
+            @JsonProperty("name") String name) {}
 
     public static BrevoEmailRequestBuilder builder() {
         return new BrevoEmailRequestBuilder();
@@ -72,7 +59,7 @@ public record BrevoEmailRequest(
         }
 
         public BrevoEmailRequestBuilder to(String email, String name) {
-            this. to = List.of(new Recipient(email, name));
+            this.to = List.of(new Recipient(email, name));
             return this;
         }
 

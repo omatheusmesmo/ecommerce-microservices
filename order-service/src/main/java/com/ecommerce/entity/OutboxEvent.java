@@ -6,16 +6,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
-
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "outbox")
-@SequenceGenerator(
-        name = "outbox_seq_gen",
-        sequenceName = "outbox_seq",
-        allocationSize = 50
-)
+@SequenceGenerator(name = "outbox_seq_gen", sequenceName = "outbox_seq", allocationSize = 50)
 public class OutboxEvent extends PanacheEntity {
 
     @NotNull

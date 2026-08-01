@@ -1,11 +1,11 @@
 package com.ecommerce.filter;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
+
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
-
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
 
 @QuarkusTest
 class LoginRateLimitFilterTest {
@@ -17,8 +17,7 @@ class LoginRateLimitFilterTest {
         String ip = "203.0.113.10";
 
         for (int i = 0; i < 10; i++) {
-            given()
-                    .header("X-Forwarded-For", ip)
+            given().header("X-Forwarded-For", ip)
                     .contentType(ContentType.JSON)
                     .body(LOGIN_BODY)
                     .when()
@@ -27,8 +26,7 @@ class LoginRateLimitFilterTest {
                     .statusCode(not(429));
         }
 
-        given()
-                .header("X-Forwarded-For", ip)
+        given().header("X-Forwarded-For", ip)
                 .contentType(ContentType.JSON)
                 .body(LOGIN_BODY)
                 .when()
@@ -47,8 +45,7 @@ class LoginRateLimitFilterTest {
         String ip = "203.0.113.20";
 
         for (int i = 0; i < 5; i++) {
-            given()
-                    .header("X-Forwarded-For", ip)
+            given().header("X-Forwarded-For", ip)
                     .contentType(ContentType.JSON)
                     .body(registerBody("rate-limit-test-" + i + "@example.com"))
                     .when()
@@ -57,8 +54,7 @@ class LoginRateLimitFilterTest {
                     .statusCode(not(429));
         }
 
-        given()
-                .header("X-Forwarded-For", ip)
+        given().header("X-Forwarded-For", ip)
                 .contentType(ContentType.JSON)
                 .body(registerBody("one-too-many@example.com"))
                 .when()
@@ -73,8 +69,7 @@ class LoginRateLimitFilterTest {
         String freshIp = "203.0.113.31";
 
         for (int i = 0; i < 10; i++) {
-            given()
-                    .header("X-Forwarded-For", exhaustedIp)
+            given().header("X-Forwarded-For", exhaustedIp)
                     .contentType(ContentType.JSON)
                     .body(LOGIN_BODY)
                     .when()
@@ -82,8 +77,7 @@ class LoginRateLimitFilterTest {
                     .then()
                     .statusCode(not(429));
         }
-        given()
-                .header("X-Forwarded-For", exhaustedIp)
+        given().header("X-Forwarded-For", exhaustedIp)
                 .contentType(ContentType.JSON)
                 .body(LOGIN_BODY)
                 .when()
@@ -91,8 +85,7 @@ class LoginRateLimitFilterTest {
                 .then()
                 .statusCode(429);
 
-        given()
-                .header("X-Forwarded-For", freshIp)
+        given().header("X-Forwarded-For", freshIp)
                 .contentType(ContentType.JSON)
                 .body(LOGIN_BODY)
                 .when()

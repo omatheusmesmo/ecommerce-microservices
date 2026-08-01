@@ -6,9 +6,4 @@ import java.time.LocalDateTime;
 
 @RegisterForReflection
 public record OrderStatusChangedEvent(
-        Long orderId,
-        String customerEmail,
-        OrderStatus oldStatus,
-        OrderStatus newStatus,
-        LocalDateTime changedAt
-) {}
+        Long orderId, String customerEmail, OrderStatus oldStatus, OrderStatus newStatus, LocalDateTime changedAt) {}

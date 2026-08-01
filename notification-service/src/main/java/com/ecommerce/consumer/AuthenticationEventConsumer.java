@@ -35,11 +35,15 @@ public class AuthenticationEventConsumer {
 
         if (jsonNode.has("url")) {
             TokenUrlEvent event = parseOrThrow(jsonNode, TokenUrlEvent.class, message);
-            LOG.infof("[KAFKA] Successfully parsed TokenUrlEvent: userId=%d, actionType=%s", event.userId(), event.actionType());
+            LOG.infof(
+                    "[KAFKA] Successfully parsed TokenUrlEvent: userId=%d, actionType=%s",
+                    event.userId(), event.actionType());
             handleTokenUrl(event);
         } else if (jsonNode.has("actionType") && jsonNode.has("email")) {
             TokenConfirmationEvent event = parseOrThrow(jsonNode, TokenConfirmationEvent.class, message);
-            LOG.infof("[KAFKA] Successfully parsed TokenConfirmationEvent: userId=%d, actionType=%s", event.userId(), event.actionType());
+            LOG.infof(
+                    "[KAFKA] Successfully parsed TokenConfirmationEvent: userId=%d, actionType=%s",
+                    event.userId(), event.actionType());
             handleTokenConfirmation(event);
         } else {
             LOG.warnf("[KAFKA] Unknown event type in authentication-email - payload: %s", message);
@@ -51,8 +55,10 @@ public class AuthenticationEventConsumer {
         try {
             return objectMapper.treeToValue(jsonNode, type);
         } catch (Exception e) {
-            LOG.errorf(e, "[KAFKA] Failed to map authentication-email message to %s: %s", type.getSimpleName(), message);
-            throw new IllegalArgumentException("Failed to map authentication-email message to " + type.getSimpleName() + ": " + message, e);
+            LOG.errorf(
+                    e, "[KAFKA] Failed to map authentication-email message to %s: %s", type.getSimpleName(), message);
+            throw new IllegalArgumentException(
+                    "Failed to map authentication-email message to " + type.getSimpleName() + ": " + message, e);
         }
     }
 
@@ -60,7 +66,8 @@ public class AuthenticationEventConsumer {
         LOG.infof("[KAFKA] Processing TokenUrlEvent: userId=%d, actionType=%s", event.userId(), event.actionType());
 
         try {
-            notificationService.notifyAuthenticationLink(event.userId(), event.email(), event.actionType(), event.url());
+            notificationService.notifyAuthenticationLink(
+                    event.userId(), event.email(), event.actionType(), event.url());
         } catch (Exception e) {
             LOG.errorf(e, "[KAFKA] Failed to process TokenUrlEvent: userId=%d", event.userId());
             throw e;
@@ -70,7 +77,9 @@ public class AuthenticationEventConsumer {
     }
 
     private void handleTokenConfirmation(TokenConfirmationEvent event) {
-        LOG.infof("[KAFKA] Processing TokenConfirmationEvent: userId=%d, actionType=%s", event.userId(), event.actionType());
+        LOG.infof(
+                "[KAFKA] Processing TokenConfirmationEvent: userId=%d, actionType=%s",
+                event.userId(), event.actionType());
 
         try {
             notificationService.notifyAuthenticationConfirmation(event.userId(), event.email(), event.actionType());

@@ -12,8 +12,7 @@ class ProblemDetailsIntegrationTest {
 
     @Test
     void unmatchedRoute_returnsProblemJson404() {
-        given()
-                .when()
+        given().when()
                 .get("/does-not-exist")
                 .then()
                 .statusCode(404)
@@ -24,8 +23,7 @@ class ProblemDetailsIntegrationTest {
 
     @Test
     void weakPassword_returnsProblemJson400() {
-        given()
-                .header("X-Forwarded-For", "198.51.100.90")
+        given().header("X-Forwarded-For", "198.51.100.90")
                 .contentType(ContentType.JSON)
                 .body("""
                         {"email":"problem-%d@example.com","password":"short"}
@@ -41,8 +39,7 @@ class ProblemDetailsIntegrationTest {
 
     @Test
     void invalidCredentials_returnProblemJson401() {
-        given()
-                .header("X-Forwarded-For", "198.51.100.91")
+        given().header("X-Forwarded-For", "198.51.100.91")
                 .contentType(ContentType.JSON)
                 .body("""
                         {"email":"nobody-%d@example.com","password":"Str0ngPassw0rd!"}

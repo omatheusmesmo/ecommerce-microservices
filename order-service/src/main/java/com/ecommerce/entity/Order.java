@@ -2,19 +2,26 @@ package com.ecommerce.entity;
 
 import com.ecommerce.valueobject.Money;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.*;
-
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "orders")
-@SequenceGenerator(
-        name = "orders_seq_gen",
-        sequenceName = "orders_seq",
-        allocationSize = 50
-)
+@SequenceGenerator(name = "orders_seq_gen", sequenceName = "orders_seq", allocationSize = 50)
 public class Order extends PanacheEntity {
 
     @Column(nullable = false)
@@ -28,12 +35,16 @@ public class Order extends PanacheEntity {
     public OrderStatus status;
 
     @Embedded
-    @AttributeOverride(name = "amount", column = @Column(name = "total_amount", nullable = false, precision = 10, scale = 2))
+    @AttributeOverride(
+            name = "amount",
+            column = @Column(name = "total_amount", nullable = false, precision = 10, scale = 2))
     @AttributeOverride(name = "currency", column = @Column(name = "total_currency", nullable = false, length = 3))
     public Money totalAmount;
 
     @Embedded
-    @AttributeOverride(name = "amount", column = @Column(name = "shipping_cost", nullable = false, precision = 10, scale = 2))
+    @AttributeOverride(
+            name = "amount",
+            column = @Column(name = "shipping_cost", nullable = false, precision = 10, scale = 2))
     @AttributeOverride(name = "currency", column = @Column(name = "shipping_currency", nullable = false, length = 3))
     public Money shippingCost;
 

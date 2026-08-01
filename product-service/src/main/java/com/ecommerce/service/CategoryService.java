@@ -4,12 +4,11 @@ import com.ecommerce.entity.Category;
 import com.ecommerce.repository.CategoryRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.bson.types.ObjectId;
-import org.jboss.logging.Logger;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import org.bson.types.ObjectId;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class CategoryService {

@@ -15,8 +15,7 @@ class DownstreamNotificationHealthCheckDownTest {
 
     @Test
     void readiness_isDown_whenAnEnabledDownstreamIsUnreachable() {
-        given()
-                .when()
+        given().when()
                 .get("/q/health/ready")
                 .then()
                 .statusCode(503)
@@ -29,8 +28,7 @@ class DownstreamNotificationHealthCheckDownTest {
         public Map<String, String> getConfigOverrides() {
             return Map.of(
                     "discord.webhook.enabled", "true",
-                    "discord.webhook.url", "http://localhost:18586/webhook"
-            );
+                    "discord.webhook.url", "http://localhost:18586/webhook");
         }
     }
 }

@@ -10,7 +10,6 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
-
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,6 +45,8 @@ public class OutboxMetrics {
                 .getSingleResult();
 
         oldestEventAgeSeconds.set(
-                oldest == null ? 0 : Duration.between(oldest, LocalDateTime.now()).getSeconds());
+                oldest == null
+                        ? 0
+                        : Duration.between(oldest, LocalDateTime.now()).getSeconds());
     }
 }

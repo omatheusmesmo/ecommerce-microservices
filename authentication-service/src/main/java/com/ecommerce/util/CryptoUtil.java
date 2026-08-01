@@ -1,17 +1,17 @@
 package com.ecommerce.util;
 
 import com.ecommerce.exception.CryptoException;
-import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
-import org.bouncycastle.crypto.params.Argon2Parameters;
-import org.eclipse.microprofile.config.ConfigProvider;
-import javax.crypto.spec.GCMParameterSpec;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
 import java.util.Arrays;
 import java.util.Base64;
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
+import org.bouncycastle.crypto.params.Argon2Parameters;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 public class CryptoUtil {
 
@@ -28,7 +28,8 @@ public class CryptoUtil {
             GCMParameterSpec spec = new GCMParameterSpec(128, iv);
             cipher.init(Cipher.ENCRYPT_MODE, key, spec);
             byte[] encrypted = cipher.doFinal(data.getBytes());
-            return Base64.getEncoder().encodeToString(iv) + ":" + Base64.getEncoder().encodeToString(encrypted);
+            return Base64.getEncoder().encodeToString(iv) + ":"
+                    + Base64.getEncoder().encodeToString(encrypted);
         } catch (Exception e) {
             throw new CryptoException("Encryption error", e);
         }
@@ -77,7 +78,8 @@ public class CryptoUtil {
 
         String saltB64 = Base64.getEncoder().encodeToString(salt);
         String hashB64 = Base64.getEncoder().encodeToString(hash);
-        return saltB64 + ":" + params.getIterations() + ":" + params.getMemory() + ":" + params.getLanes() + ":" + hashB64;
+        return saltB64 + ":" + params.getIterations() + ":" + params.getMemory() + ":" + params.getLanes() + ":"
+                + hashB64;
     }
 
     public static boolean verifyPassword(String password, String stored) {

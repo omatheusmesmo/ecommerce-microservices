@@ -20,9 +20,8 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.jboss.logging.Logger;
-
 import java.util.List;
+import org.jboss.logging.Logger;
 
 @Path("/carts")
 @Produces(MediaType.APPLICATION_JSON)
@@ -41,10 +40,7 @@ public class CartResource {
 
         CartResponse response = cartService.createCart(request);
 
-        return Response
-                .status(Response.Status.CREATED)
-                .entity(response)
-                .build();
+        return Response.status(Response.Status.CREATED).entity(response).build();
     }
 
     @GET
@@ -82,10 +78,7 @@ public class CartResource {
     @Path("/{id}/items/{itemId}")
     @RolesAllowed({"CUSTOMER", "ADMIN"})
     public CartResponse updateItemQuantity(
-            @PathParam("id") Long id,
-            @PathParam("itemId") Long itemId,
-            @Valid UpdateCartItemRequest request
-    ) {
+            @PathParam("id") Long id, @PathParam("itemId") Long itemId, @Valid UpdateCartItemRequest request) {
         LOG.infof("PUT /carts/%d/items/%d - New quantity: %d", id, itemId, request.quantity());
         return cartService.updateItemQuantity(id, itemId, request.quantity());
     }

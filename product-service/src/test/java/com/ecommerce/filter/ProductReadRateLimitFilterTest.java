@@ -1,15 +1,14 @@
 package com.ecommerce.filter;
 
-import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.QuarkusTestProfile;
-import io.quarkus.test.junit.TestProfile;
-import org.junit.jupiter.api.Test;
-
-import java.util.Map;
-
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestProfile;
+import io.quarkus.test.junit.TestProfile;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(ProductReadRateLimitFilterTest.TinyLimitProfile.class)
@@ -22,16 +21,10 @@ class ProductReadRateLimitFilterTest {
         String ip = "203.0.113.40";
 
         for (int i = 0; i < LIMIT; i++) {
-            given()
-                    .header("X-Forwarded-For", ip)
-                    .when()
-                    .get("/products")
-                    .then()
-                    .statusCode(not(429));
+            given().header("X-Forwarded-For", ip).when().get("/products").then().statusCode(not(429));
         }
 
-        given()
-                .header("X-Forwarded-For", ip)
+        given().header("X-Forwarded-For", ip)
                 .when()
                 .get("/products")
                 .then()
@@ -49,22 +42,19 @@ class ProductReadRateLimitFilterTest {
         String freshIp = "203.0.113.42";
 
         for (int i = 0; i < LIMIT; i++) {
-            given()
-                    .header("X-Forwarded-For", exhaustedIp)
+            given().header("X-Forwarded-For", exhaustedIp)
                     .when()
                     .get("/products")
                     .then()
                     .statusCode(not(429));
         }
-        given()
-                .header("X-Forwarded-For", exhaustedIp)
+        given().header("X-Forwarded-For", exhaustedIp)
                 .when()
                 .get("/products")
                 .then()
                 .statusCode(429);
 
-        given()
-                .header("X-Forwarded-For", freshIp)
+        given().header("X-Forwarded-For", freshIp)
                 .when()
                 .get("/products")
                 .then()
@@ -77,8 +67,7 @@ class ProductReadRateLimitFilterTest {
 
         // /products/{id} is a keyed single-doc read, outside the list-endpoint rate limit
         for (int i = 0; i < LIMIT + 2; i++) {
-            given()
-                    .header("X-Forwarded-For", ip)
+            given().header("X-Forwarded-For", ip)
                     .when()
                     .get("/products/000000000000000000000000")
                     .then()

@@ -1,19 +1,18 @@
 package com.ecommerce.client;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.sun.net.httpserver.HttpServer;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(DiscordWebhookClientTimeoutTest.SlowDiscordProfile.class)
@@ -61,9 +60,7 @@ public class DiscordWebhookClientTimeoutTest {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    "discord.webhook.url", "http://localhost:" + PORT + "/webhook",
-                    "discord.webhook.enabled", "true"
-            );
+                    "discord.webhook.url", "http://localhost:" + PORT + "/webhook", "discord.webhook.enabled", "true");
         }
     }
 }

@@ -27,8 +27,7 @@ class ProductServiceTimeoutTest {
         public Map<String, String> getConfigOverrides() {
             return Map.of(
                     "com.ecommerce.service.ProductService/findAll/Timeout/value", "1",
-                    "com.ecommerce.service.ProductService/findAll/Timeout/unit", "MILLIS"
-            );
+                    "com.ecommerce.service.ProductService/findAll/Timeout/unit", "MILLIS");
         }
     }
 }

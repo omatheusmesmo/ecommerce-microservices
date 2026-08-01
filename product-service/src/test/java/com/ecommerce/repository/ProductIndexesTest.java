@@ -1,14 +1,13 @@
 package com.ecommerce.repository;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-import org.bson.Document;
-import org.junit.jupiter.api.Test;
-
 import java.util.HashSet;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.bson.Document;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 class ProductIndexesTest {

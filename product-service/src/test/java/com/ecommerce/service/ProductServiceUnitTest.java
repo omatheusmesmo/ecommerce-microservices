@@ -1,26 +1,25 @@
 package com.ecommerce.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.ecommerce.entity.Category;
 import com.ecommerce.entity.Product;
-import com.ecommerce.valueobject.Money;
 import com.ecommerce.messaging.ProductEventProducer;
 import com.ecommerce.repository.CategoryRepository;
 import com.ecommerce.repository.ProductRepository;
+import com.ecommerce.valueobject.Money;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-import org.bson.types.ObjectId;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+import org.bson.types.ObjectId;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 class ProductServiceUnitTest {
@@ -44,7 +43,7 @@ class ProductServiceUnitTest {
     }
 
     @Test
-    void findAll_returnsList(){
+    void findAll_returnsList() {
         Product p1 = new Product("A", "a", new Money(new BigDecimal("1.0"), "BRL"), 5, "cat");
         p1.id = new ObjectId();
         Product p2 = new Product("B", "b", new Money(new BigDecimal("2.0"), "BRL"), 3, "cat");
@@ -59,7 +58,7 @@ class ProductServiceUnitTest {
     }
 
     @Test
-    void findById_found_and_notFound(){
+    void findById_found_and_notFound() {
         String id = new ObjectId().toString();
         Product product = new Product("X", "desc", new Money(new BigDecimal("1.0"), "BRL"), 2, "c");
         product.id = new ObjectId(id);
@@ -79,7 +78,7 @@ class ProductServiceUnitTest {
     }
 
     @Test
-    void findByCategory_and_findActiveProducts(){
+    void findByCategory_and_findActiveProducts() {
         Product p = new Product("C", "d", new Money(new BigDecimal("3.0"), "BRL"), 1, "cat");
         p.id = new ObjectId();
 
@@ -91,7 +90,7 @@ class ProductServiceUnitTest {
     }
 
     @Test
-    void create_publishesProductCreated_and_persists(){
+    void create_publishesProductCreated_and_persists() {
         Product in = new Product("New", "n", new Money(new BigDecimal("4.0"), "BRL"), 10, new ObjectId().toString());
         in.id = new ObjectId();
         doNothing().when(productRepository).persist(in);
@@ -105,7 +104,7 @@ class ProductServiceUnitTest {
     }
 
     @Test
-    void update_notFound_returnsNull(){
+    void update_notFound_returnsNull() {
         String id = new ObjectId().toString();
         when(productRepository.findById(any(ObjectId.class))).thenReturn(null);
 
@@ -117,7 +116,7 @@ class ProductServiceUnitTest {
     }
 
     @Test
-    void update_changesStock_and_publishesEvents(){
+    void update_changesStock_and_publishesEvents() {
         String id = new ObjectId().toString();
         Product existing = new Product("E", "d", new Money(new BigDecimal("5.0"), "BRL"), 10, "c");
         existing.id = new ObjectId(id);
@@ -137,11 +136,11 @@ class ProductServiceUnitTest {
     }
 
     @Test
-    void delete_notFound_and_delete_success(){
+    void delete_notFound_and_delete_success() {
         String id = new ObjectId().toString();
         when(productRepository.findById(new ObjectId(id))).thenReturn(null);
         assertFalse(productService.delete(id));
-        verify(eventProducer,  never()).publishProductDeleted(any());
+        verify(eventProducer, never()).publishProductDeleted(any());
 
         Product product = new Product("D", "d", new Money(new BigDecimal("6.0"), "BRL"), 10, "c");
         product.id = new ObjectId(id);
@@ -150,7 +149,6 @@ class ProductServiceUnitTest {
 
         assertTrue(productService.delete(id));
         verify(eventProducer, times(1)).publishProductDeleted(any());
-
     }
 
     @Test
@@ -158,8 +156,8 @@ class ProductServiceUnitTest {
         String productId = "507f1f77bcf86cd799439011";
         int quantity = 2;
 
-        Product updated = new Product("Test Product", "A test product",
-                new Money(new BigDecimal("10.00"), "BRL"), 8, "Test Category");
+        Product updated = new Product(
+                "Test Product", "A test product", new Money(new BigDecimal("10.00"), "BRL"), 8, "Test Category");
         updated.id = new ObjectId(productId);
 
         when(productRepository.decreaseStock(productId, quantity)).thenReturn(1L);
@@ -172,7 +170,7 @@ class ProductServiceUnitTest {
     }
 
     @Test
-    void decreaseStock_insufficientStock_throws(){
+    void decreaseStock_insufficientStock_throws() {
         String id = new ObjectId().toString();
         int quantity = 5;
 
@@ -185,22 +183,24 @@ class ProductServiceUnitTest {
     }
 
     @Test
-    void decreaseStock_retries_on_failure_then_success(){
+    void decreaseStock_retries_on_failure_then_success() {
         String id = new ObjectId().toString();
         int quantity = 2;
 
-        Product updated = new Product("Retry", "r", new Money(new BigDecimal("2.0"), "BRL"),8, "c");
+        Product updated = new Product("Retry", "r", new Money(new BigDecimal("2.0"), "BRL"), 8, "c");
         updated.id = new ObjectId(id);
         when(productRepository.findById(new ObjectId(id))).thenReturn(updated);
 
         AtomicInteger attempts = new AtomicInteger();
         doAnswer(invocation -> {
-            int n = attempts.incrementAndGet();
-            if (n < 3){
-                throw new RuntimeException("simulated DB down");
-            }
-            return 1L;
-        }).when(productRepository).decreaseStock(id, quantity);
+                    int n = attempts.incrementAndGet();
+                    if (n < 3) {
+                        throw new RuntimeException("simulated DB down");
+                    }
+                    return 1L;
+                })
+                .when(productRepository)
+                .decreaseStock(id, quantity);
 
         productService.decreaseStock(id, quantity);
 
@@ -209,7 +209,7 @@ class ProductServiceUnitTest {
     }
 
     @Test
-    void decreaseStock_allRetriesExhausted_throwsAndNeverPublishes(){
+    void decreaseStock_allRetriesExhausted_throwsAndNeverPublishes() {
         String id = new ObjectId().toString();
         int quantity = 2;
 
@@ -222,11 +222,11 @@ class ProductServiceUnitTest {
     }
 
     @Test
-    void increaseStock_success_and_notFound(){
+    void increaseStock_success_and_notFound() {
         String id = new ObjectId().toString();
         int quantity = 3;
 
-        Product updated = new Product("Inc","i", new Money(new BigDecimal("6.0"), "BRL"),15, "c");
+        Product updated = new Product("Inc", "i", new Money(new BigDecimal("6.0"), "BRL"), 15, "c");
         updated.id = new ObjectId(id);
 
         when(productRepository.increaseStock(id, quantity)).thenReturn(1L);

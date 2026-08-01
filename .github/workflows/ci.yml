@@ -7,6 +7,24 @@ on:
     branches: [main]
 
 jobs:
+  format:
+    name: Code style (Spotless)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+          cache-dependency-path: pom.xml
+
+      - name: Spotless check
+        run: mvn -B spotless:check
+
   detect-modules:
     uses: ./.github/workflows/detect-modules.yml
 

@@ -1,5 +1,10 @@
 package com.ecommerce.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.ecommerce.dto.AddCartItemRequest;
 import com.ecommerce.dto.CartResponse;
 import com.ecommerce.dto.CreateCartRequest;
@@ -11,15 +16,9 @@ import com.ecommerce.valueobject.Money;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.util.NoSuchElementException;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 class CartServiceTest {
@@ -67,7 +66,8 @@ class CartServiceTest {
     void addItem_newProduct_appendsItemAndRecalculatesTotal() {
         Long cartId = persistCart(CartStatus.ACTIVE);
 
-        CartResponse response = cartService.addItem(cartId,
+        CartResponse response = cartService.addItem(
+                cartId,
                 new AddCartItemRequest("prod-1", "Gaming Chair", 2, new Money(new BigDecimal("100.00"), "BRL")));
 
         assertEquals(1, response.items().size());
@@ -79,8 +79,11 @@ class CartServiceTest {
     void addItem_sameProductTwice_mergesQuantityInsteadOfDuplicating() {
         Long cartId = persistCart(CartStatus.ACTIVE);
 
-        cartService.addItem(cartId, new AddCartItemRequest("prod-1", "Gaming Chair", 2, new Money(new BigDecimal("100.00"), "BRL")));
-        CartResponse response = cartService.addItem(cartId,
+        cartService.addItem(
+                cartId,
+                new AddCartItemRequest("prod-1", "Gaming Chair", 2, new Money(new BigDecimal("100.00"), "BRL")));
+        CartResponse response = cartService.addItem(
+                cartId,
                 new AddCartItemRequest("prod-1", "Gaming Chair", 3, new Money(new BigDecimal("100.00"), "BRL")));
 
         assertEquals(1, response.items().size());
@@ -93,22 +96,35 @@ class CartServiceTest {
     void addItem_toAbandonedCart_throwsIllegalStateException() {
         Long cartId = persistCart(CartStatus.ABANDONED);
 
-        assertThrows(IllegalStateException.class, () -> cartService.addItem(cartId,
-                new AddCartItemRequest("prod-1", "Gaming Chair", 1, new Money(new BigDecimal("100.00"), "BRL"))));
+        assertThrows(
+                IllegalStateException.class,
+                () -> cartService.addItem(
+                        cartId,
+                        new AddCartItemRequest(
+                                "prod-1", "Gaming Chair", 1, new Money(new BigDecimal("100.00"), "BRL"))));
     }
 
     @Test
     @TestTransaction
     void addItem_cartNotFound_throwsNoSuchElementException() {
-        assertThrows(NoSuchElementException.class, () -> cartService.addItem(Long.MAX_VALUE,
-                new AddCartItemRequest("prod-1", "Gaming Chair", 1, new Money(new BigDecimal("100.00"), "BRL"))));
+        assertThrows(
+                NoSuchElementException.class,
+                () -> cartService.addItem(
+                        Long.MAX_VALUE,
+                        new AddCartItemRequest(
+                                "prod-1", "Gaming Chair", 1, new Money(new BigDecimal("100.00"), "BRL"))));
     }
 
     @Test
     @TestTransaction
     void updateItemQuantity_updatesQuantityAndRecalculatesTotal() {
         Long cartId = persistCartWithItem("prod-1", 2, new BigDecimal("100.00"));
-        Long itemId = cartRepository.findByIdWithItems(cartId).orElseThrow().getItems().get(0).id;
+        Long itemId = cartRepository
+                .findByIdWithItems(cartId)
+                .orElseThrow()
+                .getItems()
+                .get(0)
+                .id;
 
         CartResponse response = cartService.updateItemQuantity(cartId, itemId, 5);
 
@@ -121,15 +137,19 @@ class CartServiceTest {
     void updateItemQuantity_itemNotFound_throwsNoSuchElementException() {
         Long cartId = persistCart(CartStatus.ACTIVE);
 
-        assertThrows(NoSuchElementException.class,
-                () -> cartService.updateItemQuantity(cartId, Long.MAX_VALUE, 5));
+        assertThrows(NoSuchElementException.class, () -> cartService.updateItemQuantity(cartId, Long.MAX_VALUE, 5));
     }
 
     @Test
     @TestTransaction
     void removeItem_removesItemAndRecalculatesTotal() {
         Long cartId = persistCartWithItem("prod-1", 2, new BigDecimal("100.00"));
-        Long itemId = cartRepository.findByIdWithItems(cartId).orElseThrow().getItems().get(0).id;
+        Long itemId = cartRepository
+                .findByIdWithItems(cartId)
+                .orElseThrow()
+                .getItems()
+                .get(0)
+                .id;
 
         CartResponse response = cartService.removeItem(cartId, itemId);
 
@@ -166,8 +186,7 @@ class CartServiceTest {
     void findActiveByCustomerEmail_noActiveCart_throwsNoSuchElementException() {
         persistCart(CartStatus.ABANDONED);
 
-        assertThrows(NoSuchElementException.class,
-                () -> cartService.findActiveByCustomerEmail("jane@example.com"));
+        assertThrows(NoSuchElementException.class, () -> cartService.findActiveByCustomerEmail("jane@example.com"));
     }
 
     @Test

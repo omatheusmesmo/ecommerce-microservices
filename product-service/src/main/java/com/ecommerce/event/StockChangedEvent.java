@@ -1,7 +1,6 @@
 package com.ecommerce.event;
 
 import com.ecommerce.entity.StockChangedReason;
-
 import java.time.LocalDateTime;
 
 public record StockChangedEvent(
@@ -10,6 +9,4 @@ public record StockChangedEvent(
         Integer oldStock,
         Integer newStock,
         StockChangedReason reason,
-        LocalDateTime changedAt
-) {
-}
+        LocalDateTime changedAt) {}

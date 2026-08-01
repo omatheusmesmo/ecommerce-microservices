@@ -11,16 +11,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
-
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "cart_items")
-@SequenceGenerator(
-        name = "cart_items_seq_gen",
-        sequenceName = "cart_items_seq",
-        allocationSize = 50
-)
+@SequenceGenerator(name = "cart_items_seq_gen", sequenceName = "cart_items_seq", allocationSize = 50)
 public class CartItem extends PanacheEntity {
 
     @Column(nullable = false)
@@ -33,7 +28,9 @@ public class CartItem extends PanacheEntity {
     public Integer quantity;
 
     @Embedded
-    @AttributeOverride(name = "amount", column = @Column(name = "unit_price", nullable = false, precision = 10, scale = 2))
+    @AttributeOverride(
+            name = "amount",
+            column = @Column(name = "unit_price", nullable = false, precision = 10, scale = 2))
     @AttributeOverride(name = "currency", column = @Column(name = "unit_price_currency", nullable = false, length = 3))
     public Money unitPrice;
 

@@ -1,8 +1,16 @@
 package com.ecommerce.consumer;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -14,15 +22,6 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 public class AuthenticationEventConsumerTest {
@@ -46,11 +45,14 @@ public class AuthenticationEventConsumerTest {
     public void wellFormedTokenUrlEvent_isNotRoutedToDeadLetterQueue() throws Exception {
         String marker = UUID.randomUUID().toString();
         Map<String, Object> event = Map.of(
-                "userId", 1,
-                "email", "user@example.com",
-                "actionType", "ACTIVATE",
-                "url", "https://example.com/activate/" + marker
-        );
+                "userId",
+                1,
+                "email",
+                "user@example.com",
+                "actionType",
+                "ACTIVATE",
+                "url",
+                "https://example.com/activate/" + marker);
         String eventJson = objectMapper.writeValueAsString(event);
 
         try (KafkaProducer<String, String> producer = createProducer()) {
@@ -63,11 +65,7 @@ public class AuthenticationEventConsumerTest {
     @Test
     public void wellFormedTokenConfirmationEvent_isNotRoutedToDeadLetterQueue() throws Exception {
         String marker = UUID.randomUUID().toString();
-        Map<String, Object> event = Map.of(
-                "userId", 1,
-                "email", marker + "@example.com",
-                "actionType", "RESET"
-        );
+        Map<String, Object> event = Map.of("userId", 1, "email", marker + "@example.com", "actionType", "RESET");
         String eventJson = objectMapper.writeValueAsString(event);
 
         try (KafkaProducer<String, String> producer = createProducer()) {
@@ -95,7 +93,9 @@ public class AuthenticationEventConsumerTest {
 
     private KafkaProducer<String, String> createProducer() {
         Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
+        props.put(
+                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         return new KafkaProducer<>(props);
@@ -103,7 +103,9 @@ public class AuthenticationEventConsumerTest {
 
     private KafkaConsumer<String, String> createConsumer() {
         Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
+        props.put(
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "dlq-test-" + UUID.randomUUID());

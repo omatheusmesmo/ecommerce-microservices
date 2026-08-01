@@ -58,12 +58,14 @@ public class OrderEventConsumer {
             return objectMapper.treeToValue(jsonNode, type);
         } catch (Exception e) {
             LOG.errorf(e, "[KAFKA] Failed to map outbox.event.Order message to %s: %s", type.getSimpleName(), message);
-            throw new IllegalArgumentException("Failed to map outbox.event.Order message to " + type.getSimpleName() + ": " + message, e);
+            throw new IllegalArgumentException(
+                    "Failed to map outbox.event.Order message to " + type.getSimpleName() + ": " + message, e);
         }
     }
 
     private void handleOrderCreated(OrderCreatedEvent event) {
-        LOG.infof("[KAFKA] Processing OrderCreated event: orderId=%d, customer=%s, total=R$%.2f",
+        LOG.infof(
+                "[KAFKA] Processing OrderCreated event: orderId=%d, customer=%s, total=R$%.2f",
                 event.orderId(), event.customerName(), event.totalAmount().amount());
 
         try {
@@ -71,8 +73,7 @@ public class OrderEventConsumer {
                     event.orderId(),
                     event.customerEmail(),
                     event.customerName(),
-                    event.totalAmount().amount()
-            );
+                    event.totalAmount().amount());
         } catch (Exception e) {
             LOG.errorf(e, "[KAFKA] Failed to process OrderCreated event: orderId=%d", event.orderId());
             throw e;
@@ -82,16 +83,13 @@ public class OrderEventConsumer {
     }
 
     private void handleOrderStatusChanged(OrderStatusChangedEvent event) {
-        LOG.infof("[KAFKA] Processing OrderStatusChanged event: orderId=%d, %s → %s",
+        LOG.infof(
+                "[KAFKA] Processing OrderStatusChanged event: orderId=%d, %s → %s",
                 event.orderId(), event.oldStatus(), event.newStatus());
 
         try {
             notificationService.notifyOrderStatusChanged(
-                    event.orderId(),
-                    event.customerEmail(),
-                    event.oldStatus(),
-                    event.newStatus()
-            );
+                    event.orderId(), event.customerEmail(), event.oldStatus(), event.newStatus());
         } catch (Exception e) {
             LOG.errorf(e, "[KAFKA] Failed to process OrderStatusChanged event: orderId=%d", event.orderId());
             throw e;

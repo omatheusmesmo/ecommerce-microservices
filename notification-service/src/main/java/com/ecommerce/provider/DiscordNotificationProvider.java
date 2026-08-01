@@ -6,15 +6,14 @@ import com.ecommerce.enums.NotificationChannel;
 import com.ecommerce.enums.NotificationType;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
-public class DiscordNotificationProvider extends AbstractNotificationProvider{
+public class DiscordNotificationProvider extends AbstractNotificationProvider {
 
     @Inject
     DiscordWebhookClient discordClient;
@@ -24,7 +23,7 @@ public class DiscordNotificationProvider extends AbstractNotificationProvider{
 
     @Override
     protected void doSend(NotificationRequest request) {
-        if (!discordClient.isConfigured()){
+        if (!discordClient.isConfigured()) {
             log.warn("Discord webhook not configured, skipping notification");
             return;
         }
@@ -32,12 +31,7 @@ public class DiscordNotificationProvider extends AbstractNotificationProvider{
         String color = getColorForType(request.type());
         List<DiscordWebhookClient.Field> fields = buildFields(request);
 
-        discordClient.sendRichMessage(
-                emoji + " " + request.subject(),
-                request.message(),
-                color,
-                fields
-        );
+        discordClient.sendRichMessage(emoji + " " + request.subject(), request.message(), color, fields);
     }
 
     @Override
@@ -59,15 +53,14 @@ public class DiscordNotificationProvider extends AbstractNotificationProvider{
             case PRODUCT_CREATED -> "✨";
             case STOCK_LOW_ALERT -> "⚠️";
             case STOCK_OUT_ALERT -> "🚨";
-            case ACCOUNT_ACTIVATION_LINK, ACCOUNT_ACTIVATED,
-                 PASSWORD_RESET_LINK, PASSWORD_RESET_CONFIRMED -> "🔐";
+            case ACCOUNT_ACTIVATION_LINK, ACCOUNT_ACTIVATED, PASSWORD_RESET_LINK, PASSWORD_RESET_CONFIRMED -> "🔐";
         };
     }
 
     private String getColorForType(NotificationType type) {
         return switch (type) {
-            case ORDER_CREATED, ORDER_DELIVERED, STOCK_RESTOCKED,
-                 ACCOUNT_ACTIVATED, PASSWORD_RESET_CONFIRMED -> "green";
+            case ORDER_CREATED, ORDER_DELIVERED, STOCK_RESTOCKED, ACCOUNT_ACTIVATED, PASSWORD_RESET_CONFIRMED ->
+                "green";
             case ORDER_CANCELLED, STOCK_OUT_ALERT -> "red";
             case ORDER_STATUS_CHANGED -> "blue";
             case STOCK_LOW_ALERT -> "orange";
@@ -76,15 +69,15 @@ public class DiscordNotificationProvider extends AbstractNotificationProvider{
         };
     }
 
-    private List<DiscordWebhookClient.Field> buildFields(NotificationRequest request){
+    private List<DiscordWebhookClient.Field> buildFields(NotificationRequest request) {
         Map<String, Object> data = request.data();
-        if (data == null || data.isEmpty()){
+        if (data == null || data.isEmpty()) {
             return List.of();
         }
 
         List<DiscordWebhookClient.Field> fields = new ArrayList<>();
 
-        for (Map.Entry<String, Object> entry : data.entrySet()){
+        for (Map.Entry<String, Object> entry : data.entrySet()) {
             String fieldName = formatFieldName(entry.getKey());
             String fieldValue = formatFieldValue(entry.getValue());
 
@@ -95,10 +88,8 @@ public class DiscordNotificationProvider extends AbstractNotificationProvider{
     }
 
     private String formatFieldName(String key) {
-        return key.replaceAll("([A-Z])", " $1")
-                .trim()
-                .substring(0, 1).toUpperCase() +
-                key.replaceAll("([A-Z])", " $1").trim().substring(1);
+        return key.replaceAll("([A-Z])", " $1").trim().substring(0, 1).toUpperCase()
+                + key.replaceAll("([A-Z])", " $1").trim().substring(1);
     }
 
     private String formatFieldValue(Object value) {
@@ -111,7 +102,7 @@ public class DiscordNotificationProvider extends AbstractNotificationProvider{
         }
 
         if (value instanceof Double d) {
-            return String. format("R$ %.2f", d);
+            return String.format("R$ %.2f", d);
         }
 
         if (value instanceof Integer || value instanceof Long) {

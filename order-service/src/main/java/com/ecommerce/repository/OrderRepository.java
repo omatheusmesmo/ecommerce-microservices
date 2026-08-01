@@ -5,7 +5,6 @@ import com.ecommerce.entity.OrderStatus;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.panache.common.Parameters;
 import jakarta.enterprise.context.ApplicationScoped;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -15,26 +14,23 @@ public class OrderRepository implements PanacheRepository<Order> {
 
     public Optional<Order> findByIdWithItems(Long id) {
         return find(
-                "SELECT o FROM Order o " +
-                        "LEFT JOIN FETCH o.items " +
-                        "WHERE o.id = :  id",
-                Parameters.with("id", id)
-        ).firstResultOptional();
+                        "SELECT o FROM Order o " + "LEFT JOIN FETCH o.items " + "WHERE o.id = :  id",
+                        Parameters.with("id", id))
+                .firstResultOptional();
     }
 
-    public List<Order> findByStatus(OrderStatus status){
+    public List<Order> findByStatus(OrderStatus status) {
         return list("status", status);
     }
 
-    public List<Order> findByCustomerEmail(String email){
+    public List<Order> findByCustomerEmail(String email) {
         return list("customerEmail", email);
     }
 
-    public List<Order> findByPeriod(LocalDateTime start, LocalDateTime end){
+    public List<Order> findByPeriod(LocalDateTime start, LocalDateTime end) {
         return list(
                 "createdAt BETWEEN :start AND :end",
-                Parameters.with("start", start).and("end", end)
-        );
+                Parameters.with("start", start).and("end", end));
     }
 
     public long countByStatus(OrderStatus status) {
@@ -45,7 +41,6 @@ public class OrderRepository implements PanacheRepository<Order> {
         LocalDateTime threshold = LocalDateTime.now().minusDays(days);
         return list(
                 "status = :status AND createdAt < :threshold",
-                Parameters.with("status", OrderStatus.PENDING).and("threshold", threshold)
-        );
+                Parameters.with("status", OrderStatus.PENDING).and("threshold", threshold));
     }
 }

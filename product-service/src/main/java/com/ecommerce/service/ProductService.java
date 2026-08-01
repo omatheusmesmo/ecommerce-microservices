@@ -14,16 +14,15 @@ import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.CacheResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.bson.types.ObjectId;
-import org.eclipse.microprofile.faulttolerance.Retry;
-import org.eclipse.microprofile.faulttolerance.Timeout;
-import org.jboss.logging.Logger;
-
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import org.bson.types.ObjectId;
+import org.eclipse.microprofile.faulttolerance.Retry;
+import org.eclipse.microprofile.faulttolerance.Timeout;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class ProductService {
@@ -84,8 +83,7 @@ public class ProductService {
                 product.categoryId,
                 product.price,
                 product.totalOnHand(),
-                product.createdAt
-        );
+                product.createdAt);
         eventProducer.publishProductCreated(event);
 
         return product;
@@ -124,8 +122,7 @@ public class ProductService {
                 existing.categoryId,
                 existing.price,
                 existing.totalOnHand(),
-                existing.updatedAt
-        );
+                existing.updatedAt);
         eventProducer.publishProductUpdated(event);
 
         if (!Objects.equals(oldStock, existing.totalOnHand())) {
@@ -135,8 +132,7 @@ public class ProductService {
                     oldStock,
                     existing.totalOnHand(),
                     StockChangedReason.ADJUSTMENT,
-                    LocalDateTime.now()
-            );
+                    LocalDateTime.now());
             eventProducer.publishStockChanged(stockEvent);
         }
 
@@ -156,18 +152,17 @@ public class ProductService {
 
         boolean deleted = productRepository.deleteById(new ObjectId(id));
         if (deleted) {
-            ProductDeletedEvent event = new ProductDeletedEvent(
-                    product.id.toString(),
-                    product.name,
-                    LocalDateTime.now()
-            );
+            ProductDeletedEvent event =
+                    new ProductDeletedEvent(product.id.toString(), product.name, LocalDateTime.now());
             eventProducer.publishProductDeleted(event);
             LOG.infof("Product %s deleted successfully", id);
         }
         return deleted;
     }
 
-    @Retry(delay = 1000, abortOn = {IllegalArgumentException.class, IllegalStateException.class})
+    @Retry(
+            delay = 1000,
+            abortOn = {IllegalArgumentException.class, IllegalStateException.class})
     @CacheInvalidateAll(cacheName = "products-cache")
     @CacheInvalidateAll(cacheName = "products-by-category")
     @CacheInvalidateAll(cacheName = "products-active")
@@ -189,13 +184,14 @@ public class ProductService {
                 updated.totalOnHand() + quantity,
                 updated.totalOnHand(),
                 StockChangedReason.PURCHASE,
-                LocalDateTime.now()
-        );
+                LocalDateTime.now());
         eventProducer.publishStockChanged(event);
         LOG.infof("Stock decreased atomically for product %s: -%d", productId, quantity);
     }
 
-    @Retry(delay = 1000, abortOn = {IllegalArgumentException.class, IllegalStateException.class})
+    @Retry(
+            delay = 1000,
+            abortOn = {IllegalArgumentException.class, IllegalStateException.class})
     @CacheInvalidateAll(cacheName = "products-cache")
     @CacheInvalidateAll(cacheName = "products-by-category")
     @CacheInvalidateAll(cacheName = "products-active")
@@ -217,8 +213,7 @@ public class ProductService {
                 updated.totalOnHand() - quantity,
                 updated.totalOnHand(),
                 StockChangedReason.RESTOCK,
-                LocalDateTime.now()
-        );
+                LocalDateTime.now());
         eventProducer.publishStockChanged(event);
         LOG.infof("Stock increased atomically for product %s: +%d", productId, quantity);
     }

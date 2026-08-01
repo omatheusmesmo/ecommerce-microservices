@@ -9,13 +9,15 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
+import java.util.List;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
-
-import java.util.List;
-
 
 @Path("/users")
 @ApplicationScoped
@@ -25,11 +27,12 @@ public class UserResource {
 
     @Inject
     UserService userService;
+
     @Inject
     AuthService authService;
+
     @Inject
     JsonWebToken jwt;
-
 
     @GET
     @Path("/profile")

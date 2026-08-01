@@ -1,8 +1,18 @@
 package com.ecommerce.consumer;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -14,17 +24,6 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
-
-import java.math.BigDecimal;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 public class OrderEventConsumerTest {
@@ -48,22 +47,33 @@ public class OrderEventConsumerTest {
     public void wellFormedOrderCreatedEvent_isNotRoutedToDeadLetterQueue() throws Exception {
         String marker = UUID.randomUUID().toString();
         Map<String, Object> item = Map.of(
-                "productId", marker,
-                "productName", "Test Product",
-                "quantity", 1,
-                "unitPrice", money("10.00"),
-                "subtotal", money("10.00")
-        );
+                "productId",
+                marker,
+                "productName",
+                "Test Product",
+                "quantity",
+                1,
+                "unitPrice",
+                money("10.00"),
+                "subtotal",
+                money("10.00"));
         Map<String, Object> event = Map.of(
-                "orderId", 1,
-                "customerName", "Customer",
-                "customerEmail", "customer@example.com",
-                "status", "CONFIRMED",
-                "totalAmount", money("10.00"),
-                "shippingCost", money("0.00"),
-                "items", List.of(item),
-                "createdAt", LocalDateTime.now().toString()
-        );
+                "orderId",
+                1,
+                "customerName",
+                "Customer",
+                "customerEmail",
+                "customer@example.com",
+                "status",
+                "CONFIRMED",
+                "totalAmount",
+                money("10.00"),
+                "shippingCost",
+                money("0.00"),
+                "items",
+                List.of(item),
+                "createdAt",
+                LocalDateTime.now().toString());
         String eventJson = objectMapper.writeValueAsString(event);
 
         try (KafkaProducer<String, String> producer = createProducer()) {
@@ -77,19 +87,24 @@ public class OrderEventConsumerTest {
     public void wellFormedOrderStatusChangedEvent_isDispatchedAndNotRoutedToDeadLetterQueue() throws Exception {
         String marker = UUID.randomUUID().toString();
         Map<String, Object> event = Map.of(
-                "orderId", 1,
-                "customerEmail", marker + "@example.com",
-                "oldStatus", "PENDING",
-                "newStatus", "CONFIRMED",
-                "changedAt", LocalDateTime.now().toString()
-        );
+                "orderId",
+                1,
+                "customerEmail",
+                marker + "@example.com",
+                "oldStatus",
+                "PENDING",
+                "newStatus",
+                "CONFIRMED",
+                "changedAt",
+                LocalDateTime.now().toString());
         String eventJson = objectMapper.writeValueAsString(event);
 
         try (KafkaProducer<String, String> producer = createProducer()) {
             producer.send(new ProducerRecord<>("outbox.event.Order", marker, eventJson));
         }
 
-        assertFalse(waitForDlqMessage(marker, 10_000),
+        assertFalse(
+                waitForDlqMessage(marker, 10_000),
                 "Well-formed OrderStatusChanged event should be dispatched to that branch, not the DLQ");
     }
 
@@ -97,22 +112,33 @@ public class OrderEventConsumerTest {
     public void doubleEncodedOrderCreatedEvent_isParsedAndNotRoutedToDeadLetterQueue() throws Exception {
         String marker = UUID.randomUUID().toString();
         Map<String, Object> item = Map.of(
-                "productId", marker,
-                "productName", "Test Product",
-                "quantity", 1,
-                "unitPrice", money("10.00"),
-                "subtotal", money("10.00")
-        );
+                "productId",
+                marker,
+                "productName",
+                "Test Product",
+                "quantity",
+                1,
+                "unitPrice",
+                money("10.00"),
+                "subtotal",
+                money("10.00"));
         Map<String, Object> event = Map.of(
-                "orderId", 2,
-                "customerName", "Customer",
-                "customerEmail", "customer@example.com",
-                "status", "CONFIRMED",
-                "totalAmount", money("10.00"),
-                "shippingCost", money("0.00"),
-                "items", List.of(item),
-                "createdAt", LocalDateTime.now().toString()
-        );
+                "orderId",
+                2,
+                "customerName",
+                "Customer",
+                "customerEmail",
+                "customer@example.com",
+                "status",
+                "CONFIRMED",
+                "totalAmount",
+                money("10.00"),
+                "shippingCost",
+                money("0.00"),
+                "items",
+                List.of(item),
+                "createdAt",
+                LocalDateTime.now().toString());
         String innerJson = objectMapper.writeValueAsString(event);
         String doubleEncodedJson = objectMapper.writeValueAsString(innerJson);
 
@@ -120,7 +146,8 @@ public class OrderEventConsumerTest {
             producer.send(new ProducerRecord<>("outbox.event.Order", marker, doubleEncodedJson));
         }
 
-        assertFalse(waitForDlqMessage(marker, 10_000),
+        assertFalse(
+                waitForDlqMessage(marker, 10_000),
                 "Double-encoded event should be unwrapped and parsed, not routed to the DLQ");
     }
 
@@ -134,7 +161,8 @@ public class OrderEventConsumerTest {
             producer.send(new ProducerRecord<>("outbox.event.Order", marker, eventJson));
         }
 
-        assertTrue(waitForDlqMessage(marker, 30_000),
+        assertTrue(
+                waitForDlqMessage(marker, 30_000),
                 "A well-formed but unrecognized event shape should be routed to the DLQ");
     }
 
@@ -160,7 +188,9 @@ public class OrderEventConsumerTest {
 
     private KafkaProducer<String, String> createProducer() {
         Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
+        props.put(
+                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         return new KafkaProducer<>(props);
@@ -168,7 +198,9 @@ public class OrderEventConsumerTest {
 
     private KafkaConsumer<String, String> createConsumer() {
         Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
+        props.put(
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "dlq-test-" + UUID.randomUUID());

@@ -14,14 +14,8 @@ public record OrderCreatedEvent(
         Money totalAmount,
         Money shippingCost,
         List<OrderItemEvent> items,
-        LocalDateTime createdAt
-) {
+        LocalDateTime createdAt) {
     @RegisterForReflection
     public record OrderItemEvent(
-            String productId,
-            String productName,
-            Integer quantity,
-            Money unitPrice,
-            Money subtotal
-    ) {}
+            String productId, String productName, Integer quantity, Money unitPrice, Money subtotal) {}
 }

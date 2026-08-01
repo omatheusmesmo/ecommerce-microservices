@@ -25,6 +25,8 @@
     <surefire-plugin.version>3.5.6</surefire-plugin.version>
     <jackson.version>2.22.1</jackson.version>
     <quarkus-http-problem.version>3.33.2</quarkus-http-problem.version>
+    <spotless-plugin.version>3.9.0</spotless-plugin.version>
+    <palantir-java-format.version>2.96.0</palantir-java-format.version>
   </properties>
 
   <dependencyManagement>
@@ -52,4 +54,31 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>${spotless-plugin.version}</version>
+        <configuration>
+          <java>
+            <palantirJavaFormat>
+              <version>${palantir-java-format.version}</version>
+            </palantirJavaFormat>
+            <removeUnusedImports/>
+            <importOrder/>
+          </java>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>apply</goal>
+            </goals>
+            <phase>process-sources</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

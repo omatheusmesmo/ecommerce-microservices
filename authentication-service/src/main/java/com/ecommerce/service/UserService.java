@@ -1,6 +1,10 @@
 package com.ecommerce.service;
 
-import com.ecommerce.dto.*;
+import com.ecommerce.dto.ActivationRequest;
+import com.ecommerce.dto.PasswordResetRequest;
+import com.ecommerce.dto.PasswordResetUpdateRequest;
+import com.ecommerce.dto.RegisterRequest;
+import com.ecommerce.dto.UserResponse;
 import com.ecommerce.entity.ActionType;
 import com.ecommerce.entity.Role;
 import com.ecommerce.entity.User;
@@ -15,26 +19,29 @@ import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
-
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class UserService {
 
-    private final static Logger LOG = Logger.getLogger(UserService.class);
+    private static final Logger LOG = Logger.getLogger(UserService.class);
 
     @Inject
     UserRepository userRepository;
+
     @Inject
     UserActionTokenService userActionTokenService;
+
     @Inject
     Event<TokenUrlEvent> tokenUrlEventEmitter;
+
     @Inject
     Event<TokenConfirmationEvent> tokenConfirmationEventEmitter;
+
     @Inject
     Argon2Executor argon2Executor;
 
@@ -69,9 +76,9 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse register (RegisterRequest request){
+    public UserResponse register(RegisterRequest request) {
         LOG.infof("Self-register attempt for email: %s", request.email());
-        if (userRepository.findByEmail(request.email()) != null){
+        if (userRepository.findByEmail(request.email()) != null) {
             LOG.warnf("Email already exists: %s", request.email());
             throw new IllegalArgumentException("Email already exists");
         }
@@ -131,16 +138,16 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse promote(Long userId, Role newRole, Long promoteId){
+    public UserResponse promote(Long userId, Role newRole, Long promoteId) {
         LOG.infof("Promotion attempt for user %d to role %s by user %d", userId, newRole, promoteId);
 
-        if (!isAdmin(promoteId)){
+        if (!isAdmin(promoteId)) {
             LOG.warnf("Unauthorized promotion attempt by user: %d", promoteId);
             throw new SecurityException("Only admins can promote users");
         }
 
         User user = userRepository.findById(userId);
-        if (user == null){
+        if (user == null) {
             LOG.warnf("User not found for promotion: %d", userId);
             throw new IllegalArgumentException("User not found");
         }
@@ -151,17 +158,17 @@ public class UserService {
         return UserResponse.from(user);
     }
 
-    public UserResponse getProfile(Long userId){
+    public UserResponse getProfile(Long userId) {
         LOG.debugf("Fetching profile for user: %d", userId);
         User user = userRepository.findById(userId);
-        if (user == null){
+        if (user == null) {
             LOG.warnf("User not found for profile: %d", userId);
             return null;
         }
         return UserResponse.from(user);
     }
 
-    private boolean isAdmin(Long userId){
+    private boolean isAdmin(Long userId) {
         User user = userRepository.findById(userId);
         return user != null && user.role == Role.ADMIN;
     }
