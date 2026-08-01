@@ -7,8 +7,6 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
-import java.time.LocalDateTime;
-
 @ApplicationScoped
 public class RefreshTokenCleanupService {
 

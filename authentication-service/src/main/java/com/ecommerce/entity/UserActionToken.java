@@ -5,7 +5,6 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.SequenceGenerator;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_action_tokens")
