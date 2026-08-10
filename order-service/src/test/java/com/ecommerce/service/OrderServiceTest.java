@@ -12,6 +12,7 @@ import com.ecommerce.entity.Order;
 import com.ecommerce.entity.OrderStatus;
 import com.ecommerce.entity.OutboxEvent;
 import com.ecommerce.repository.OrderRepository;
+import com.ecommerce.valueobject.Address;
 import com.ecommerce.valueobject.Money;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
@@ -42,12 +43,17 @@ class OrderServiceTest {
     @Inject
     OrderRepository orderRepository;
 
+    private static final Address SHIPPING_ADDRESS =
+            new Address("Av. Paulista", "1000", "Apto 42", "São Paulo", "SP", "01310-100", "BR");
+
     private CreateOrderRequest createOrderRequest() {
         return new CreateOrderRequest(
                 "Jane Doe",
                 "jane@example.com",
                 List.of(new OrderItemRequest("prod-1", "Gaming Chair", 2, new Money(new BigDecimal("100.00"), "BRL"))),
-                new Money(new BigDecimal("15.00"), "BRL"));
+                new Money(new BigDecimal("15.00"), "BRL"),
+                SHIPPING_ADDRESS,
+                null);
     }
 
     private Long persistOrder(OrderStatus status) {
@@ -85,7 +91,9 @@ class OrderServiceTest {
                 "Kafka Flow Test " + marker,
                 "kafka-flow@example.com",
                 List.of(new OrderItemRequest("prod-1", "Gaming Chair", 1, new Money(new BigDecimal("50.00"), "BRL"))),
-                new Money(new BigDecimal("5.00"), "BRL"));
+                new Money(new BigDecimal("5.00"), "BRL"),
+                SHIPPING_ADDRESS,
+                null);
 
         OrderResponse response = orderService.createOrder(request);
 

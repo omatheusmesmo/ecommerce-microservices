@@ -1,5 +1,6 @@
 package com.ecommerce.dto;
 
+import com.ecommerce.valueobject.Address;
 import com.ecommerce.valueobject.Money;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -21,4 +22,9 @@ public record CreateOrderRequest(
         List<@Valid OrderItemRequest> items,
 
         @NotNull(message = "Shipping cost is required") @Valid
-        Money shippingCost) {}
+        Money shippingCost,
+
+        @NotNull(message = "Shipping address is required") @Valid
+        Address shippingAddress,
+
+        @Valid Address billingAddress) {}

@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.not;
 
 import com.ecommerce.dto.CreateOrderRequest;
 import com.ecommerce.dto.OrderItemRequest;
+import com.ecommerce.valueobject.Address;
 import com.ecommerce.valueobject.Money;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
@@ -22,7 +23,9 @@ class OrderResourceAuthorizationTest {
             "Jane Doe",
             "jane@example.com",
             List.of(new OrderItemRequest("prod-1", "Gaming Chair", 1, new Money(new BigDecimal("850.00"), "BRL"))),
-            new Money(new BigDecimal("15.00"), "BRL"));
+            new Money(new BigDecimal("15.00"), "BRL"),
+            new Address("Av. Paulista", "1000", null, "São Paulo", "SP", "01310-100", "BR"),
+            null);
 
     @Test
     void createOrder_withoutAuth_isRejected() {

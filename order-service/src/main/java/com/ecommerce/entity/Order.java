@@ -1,5 +1,6 @@
 package com.ecommerce.entity;
 
+import com.ecommerce.valueobject.Address;
 import com.ecommerce.valueobject.Money;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.AttributeOverride;
@@ -47,6 +48,27 @@ public class Order extends PanacheEntity {
             column = @Column(name = "shipping_cost", nullable = false, precision = 10, scale = 2))
     @AttributeOverride(name = "currency", column = @Column(name = "shipping_currency", nullable = false, length = 3))
     public Money shippingCost;
+
+    // Snapshot of the addresses at the time the order was placed; immutable afterwards
+    @Embedded
+    @AttributeOverride(name = "street", column = @Column(name = "shipping_street", updatable = false))
+    @AttributeOverride(name = "number", column = @Column(name = "shipping_number", length = 20, updatable = false))
+    @AttributeOverride(name = "complement", column = @Column(name = "shipping_complement", updatable = false))
+    @AttributeOverride(name = "city", column = @Column(name = "shipping_city", length = 100, updatable = false))
+    @AttributeOverride(name = "state", column = @Column(name = "shipping_state", length = 100, updatable = false))
+    @AttributeOverride(name = "zipCode", column = @Column(name = "shipping_zip_code", length = 20, updatable = false))
+    @AttributeOverride(name = "country", column = @Column(name = "shipping_country", length = 100, updatable = false))
+    public Address shippingAddress;
+
+    @Embedded
+    @AttributeOverride(name = "street", column = @Column(name = "billing_street", updatable = false))
+    @AttributeOverride(name = "number", column = @Column(name = "billing_number", length = 20, updatable = false))
+    @AttributeOverride(name = "complement", column = @Column(name = "billing_complement", updatable = false))
+    @AttributeOverride(name = "city", column = @Column(name = "billing_city", length = 100, updatable = false))
+    @AttributeOverride(name = "state", column = @Column(name = "billing_state", length = 100, updatable = false))
+    @AttributeOverride(name = "zipCode", column = @Column(name = "billing_zip_code", length = 20, updatable = false))
+    @AttributeOverride(name = "country", column = @Column(name = "billing_country", length = 100, updatable = false))
+    public Address billingAddress;
 
     @Column(nullable = false, updatable = false)
     public LocalDateTime createdAt;

@@ -38,6 +38,8 @@ public class OrderService {
 
         Order order = new Order(request.customerName(), request.customerEmail());
         order.shippingCost = request.shippingCost();
+        order.shippingAddress = request.shippingAddress();
+        order.billingAddress = request.billingAddress() != null ? request.billingAddress() : request.shippingAddress();
 
         for (var itemReq : request.items()) {
             OrderItem item =
