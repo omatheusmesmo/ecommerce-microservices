@@ -2,6 +2,8 @@ package com.ecommerce.exception;
 
 import io.quarkiverse.httpproblem.ExceptionMapperBase;
 import io.quarkiverse.httpproblem.HttpProblem;
+import io.quarkiverse.httpproblem.postprocessing.PostProcessorsRegistry;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
@@ -11,6 +13,13 @@ import org.eclipse.microprofile.faulttolerance.exceptions.BulkheadException;
 @Provider
 public class GlobalExceptionMapper extends ExceptionMapperBase<RuntimeException>
         implements ExceptionMapper<RuntimeException> {
+
+    public GlobalExceptionMapper() {}
+
+    @Inject
+    public GlobalExceptionMapper(PostProcessorsRegistry postProcessorsRegistry) {
+        super(postProcessorsRegistry);
+    }
 
     @Override
     protected HttpProblem toProblem(RuntimeException exception) {

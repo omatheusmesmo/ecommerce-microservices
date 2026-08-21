@@ -24,7 +24,7 @@
     <skipITs>true</skipITs>
     <surefire-plugin.version>3.5.6</surefire-plugin.version>
     <jackson.version>2.22.1</jackson.version>
-    <quarkus-http-problem.version>3.33.2</quarkus-http-problem.version>
+    <quarkus-http-problem.version>3.38.2</quarkus-http-problem.version>
     <spotless-plugin.version>3.9.0</spotless-plugin.version>
     <palantir-java-format.version>2.96.0</palantir-java-format.version>
   </properties>
