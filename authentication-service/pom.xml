@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.ecommerce</groupId>
         <artifactId>ecommerce-microservices</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>0.3.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>authentication-service</artifactId>
