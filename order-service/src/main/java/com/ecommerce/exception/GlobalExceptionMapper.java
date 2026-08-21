@@ -2,6 +2,8 @@ package com.ecommerce.exception;
 
 import io.quarkiverse.httpproblem.ExceptionMapperBase;
 import io.quarkiverse.httpproblem.HttpProblem;
+import io.quarkiverse.httpproblem.postprocessing.PostProcessorsRegistry;
+import jakarta.inject.Inject;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -13,6 +15,13 @@ import org.hibernate.StaleStateException;
 @Provider
 public class GlobalExceptionMapper extends ExceptionMapperBase<RuntimeException>
         implements ExceptionMapper<RuntimeException> {
+
+    public GlobalExceptionMapper() {}
+
+    @Inject
+    public GlobalExceptionMapper(PostProcessorsRegistry postProcessorsRegistry) {
+        super(postProcessorsRegistry);
+    }
 
     @Override
     protected HttpProblem toProblem(RuntimeException exception) {
