@@ -15,14 +15,17 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -85,6 +88,9 @@ public class OrderEventConsumerTest {
 
         try (KafkaProducer<String, String> producer = createProducer()) {
             ProducerRecord<String, String> record = new ProducerRecord<>("outbox.event.Order", productId, eventJson);
+            record.headers()
+                    .add(new RecordHeader(
+                            "eventId", UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8)));
             producer.send(record);
         }
 
@@ -108,6 +114,9 @@ public class OrderEventConsumerTest {
 
         try (KafkaProducer<String, String> producer = createProducer()) {
             ProducerRecord<String, String> record = new ProducerRecord<>("outbox.event.Order", productId, eventJson);
+            record.headers()
+                    .add(new RecordHeader(
+                            "eventId", UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8)));
             producer.send(record);
         }
 
@@ -153,8 +162,48 @@ public class OrderEventConsumerTest {
         assertEquals(8, updated.totalOnHand());
     }
 
+    @Test
+    public void onOrderEvent_isIdempotent_whenSameEventIdRedeliveredAtDifferentOffset() throws Exception {
+        Product product = new Product(
+                "Test Product Republished",
+                "Description",
+                new Money(new BigDecimal("100.00"), "BRL"),
+                10,
+                newCategoryId());
+        Product created = productService.create(product);
+        String productId = created.id.toString();
+
+        OrderCreatedEvent.OrderItemEvent item = new OrderCreatedEvent.OrderItemEvent(
+                productId,
+                "Test Product Republished",
+                2,
+                new Money(new BigDecimal("100.00"), "BRL"),
+                new Money(new BigDecimal("200.00"), "BRL"));
+        OrderCreatedEvent event = new OrderCreatedEvent(
+                998L,
+                "Customer",
+                "customer@example.com",
+                "CONFIRMED",
+                new Money(new BigDecimal("200.00"), "BRL"),
+                List.of(item),
+                LocalDateTime.now());
+        String eventJson = objectMapper.writeValueAsString(event);
+        String eventId = UUID.randomUUID().toString();
+
+        orderEventConsumer.onOrderEvent(toKafkaMessage(eventJson, 1L, eventId));
+        orderEventConsumer.onOrderEvent(toKafkaMessage(eventJson, 2L, eventId));
+
+        Product updated = productService.findById(productId);
+        assertEquals(8, updated.totalOnHand());
+    }
+
     private Message<String> toRedeliveredKafkaMessage(String payload, long offset) {
+        return toKafkaMessage(payload, offset, UUID.randomUUID().toString());
+    }
+
+    private Message<String> toKafkaMessage(String payload, long offset, String eventId) {
         ConsumerRecord<String, String> record = new ConsumerRecord<>("outbox.event.Order", 0, offset, "key", payload);
+        record.headers().add(new RecordHeader("eventId", eventId.getBytes(StandardCharsets.UTF_8)));
         IncomingKafkaRecordMetadata<String, String> metadata =
                 new IncomingKafkaRecordMetadata<>(record, "order-events");
         return Message.of(payload, Metadata.of(metadata));

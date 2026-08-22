@@ -7,7 +7,9 @@ import io.quarkus.scheduler.Scheduled;
 import io.smallrye.reactive.messaging.kafka.api.OutgoingKafkaRecordMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -35,6 +37,8 @@ public class OutboxDevPublisher {
             emitter.send(Message.of(event.payload)
                     .addMetadata(OutgoingKafkaRecordMetadata.<String>builder()
                             .withKey(event.aggregateId)
+                            .addHeaders(new RecordHeader(
+                                    "eventId", event.eventId.toString().getBytes(StandardCharsets.UTF_8)))
                             .build()));
             event.delete();
         }

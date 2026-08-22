@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,6 +26,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -54,7 +56,12 @@ public class OrderEventDeadLetterQueueTest {
         String malformedPayload = "{not-valid-json marker=" + marker;
 
         try (KafkaProducer<String, String> producer = createProducer()) {
-            producer.send(new ProducerRecord<>("outbox.event.Order", "dlq-test-key", malformedPayload));
+            ProducerRecord<String, String> record =
+                    new ProducerRecord<>("outbox.event.Order", "dlq-test-key", malformedPayload);
+            record.headers()
+                    .add(new RecordHeader(
+                            "eventId", UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8)));
+            producer.send(record);
         }
 
         assertTrue(waitForDlqMessage(marker), "Expected malformed message to be routed to the DLQ topic");
@@ -84,7 +91,11 @@ public class OrderEventDeadLetterQueueTest {
         String eventJson = objectMapper.writeValueAsString(event);
 
         try (KafkaProducer<String, String> producer = createProducer()) {
-            producer.send(new ProducerRecord<>("outbox.event.Order", productId, eventJson));
+            ProducerRecord<String, String> record = new ProducerRecord<>("outbox.event.Order", productId, eventJson);
+            record.headers()
+                    .add(new RecordHeader(
+                            "eventId", UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8)));
+            producer.send(record);
         }
 
         assertTrue(

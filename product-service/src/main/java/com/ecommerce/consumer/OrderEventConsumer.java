@@ -13,6 +13,8 @@ import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.nio.charset.StandardCharsets;
+import org.apache.kafka.common.header.Header;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
@@ -79,7 +81,11 @@ public class OrderEventConsumer {
         IncomingKafkaRecordMetadata<?, ?> metadata = kafkaMessage
                 .getMetadata(IncomingKafkaRecordMetadata.class)
                 .orElseThrow(() -> new IllegalStateException("Missing Kafka record metadata"));
-        return metadata.getTopic() + "-" + metadata.getPartition() + "-" + metadata.getOffset();
+        Header eventId = metadata.getHeaders().lastHeader("eventId");
+        if (eventId == null) {
+            throw new IllegalStateException("Missing eventId header on order event");
+        }
+        return new String(eventId.value(), StandardCharsets.UTF_8);
     }
 
     private boolean isAlreadyProcessed(String eventKey) {
