@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import org.eclipse.microprofile.faulttolerance.Timeout;
 import org.jboss.logging.Logger;
 
@@ -33,10 +34,20 @@ public class OrderService {
     ObjectMapper objectMapper;
 
     @Transactional
-    public OrderResponse createOrder(CreateOrderRequest request) {
+    public OrderResponse createOrder(CreateOrderRequest request, String idempotencyKey) {
         LOG.infof("Creating order for customer: %s", request.customerName());
 
+        String key = (idempotencyKey == null || idempotencyKey.isBlank()) ? null : idempotencyKey;
+        if (key != null) {
+            Optional<Order> existing = orderRepository.findByIdempotencyKey(key);
+            if (existing.isPresent()) {
+                LOG.infof("Order creation deduped by idempotency key: %s", key);
+                return OrderResponse.from(existing.get());
+            }
+        }
+
         Order order = new Order(request.customerName(), request.customerEmail());
+        order.idempotencyKey = key;
         order.shippingCost = request.shippingCost();
         order.shippingAddress = request.shippingAddress();
         order.billingAddress = request.billingAddress() != null ? request.billingAddress() : request.shippingAddress();

@@ -31,6 +31,9 @@ public class Order extends PanacheEntity {
     @Column(nullable = false)
     public String customerEmail;
 
+    @Column(unique = true)
+    public String idempotencyKey;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     public OrderStatus status;

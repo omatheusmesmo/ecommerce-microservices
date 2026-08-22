@@ -1,6 +1,7 @@
 package com.ecommerce.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -68,7 +69,7 @@ class OrderServiceTest {
     void createOrder_persistsOrderAndWritesMatchingOutboxEventAtomically() {
         long outboxCountBefore = OutboxEvent.count();
 
-        OrderResponse response = orderService.createOrder(createOrderRequest());
+        OrderResponse response = orderService.createOrder(createOrderRequest(), null);
 
         assertNotNull(response.id());
         assertEquals(new Money(new BigDecimal("215.00"), "BRL"), response.totalAmount());
@@ -85,6 +86,27 @@ class OrderServiceTest {
     }
 
     @Test
+    @TestTransaction
+    void createOrder_sameIdempotencyKey_returnsExistingOrder_withoutCreatingDuplicate() {
+        String idempotencyKey = UUID.randomUUID().toString();
+
+        OrderResponse first = orderService.createOrder(createOrderRequest(), idempotencyKey);
+        OrderResponse second = orderService.createOrder(createOrderRequest(), idempotencyKey);
+
+        assertEquals(first.id(), second.id());
+        assertEquals(1, orderRepository.count("idempotencyKey", idempotencyKey));
+    }
+
+    @Test
+    @TestTransaction
+    void createOrder_blankIdempotencyKey_isTreatedAsAbsent() {
+        OrderResponse first = orderService.createOrder(createOrderRequest(), "");
+        OrderResponse second = orderService.createOrder(createOrderRequest(), "  ");
+
+        assertNotEquals(first.id(), second.id());
+    }
+
+    @Test
     void createOrder_outboxEventReachesKafka() {
         String marker = UUID.randomUUID().toString();
         CreateOrderRequest request = new CreateOrderRequest(
@@ -95,7 +117,7 @@ class OrderServiceTest {
                 SHIPPING_ADDRESS,
                 null);
 
-        OrderResponse response = orderService.createOrder(request);
+        OrderResponse response = orderService.createOrder(request, null);
 
         Optional<String> message =
                 waitForKafkaMessage("outbox.event.Order", value -> value.contains("\"orderId\":" + response.id()), 10);

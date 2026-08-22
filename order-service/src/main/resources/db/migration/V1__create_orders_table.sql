@@ -4,6 +4,7 @@ CREATE TABLE orders (
     id BIGINT NOT NULL DEFAULT nextval('orders_seq'),
     customer_name VARCHAR(255) NOT NULL,
     customer_email VARCHAR(255) NOT NULL,
+    idempotency_key VARCHAR(255) UNIQUE,
     status VARCHAR(50) NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL,
     total_currency VARCHAR(3) NOT NULL DEFAULT 'BRL',

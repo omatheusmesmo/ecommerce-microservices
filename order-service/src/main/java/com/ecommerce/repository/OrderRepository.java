@@ -27,6 +27,10 @@ public class OrderRepository implements PanacheRepository<Order> {
         return list("customerEmail", email);
     }
 
+    public Optional<Order> findByIdempotencyKey(String idempotencyKey) {
+        return find("idempotencyKey", idempotencyKey).firstResultOptional();
+    }
+
     public List<Order> findByPeriod(LocalDateTime start, LocalDateTime end) {
         return list(
                 "createdAt BETWEEN :start AND :end",

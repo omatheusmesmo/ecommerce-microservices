@@ -11,6 +11,7 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
@@ -34,10 +35,11 @@ public class OrderResource {
 
     @POST
     @RolesAllowed({"CUSTOMER", "ADMIN"})
-    public Response createOrder(@Valid CreateOrderRequest request) {
+    public Response createOrder(
+            @Valid CreateOrderRequest request, @HeaderParam("Idempotency-Key") String idempotencyKey) {
         LOG.infof("POST /orders - Creating order for: %s", request.customerName());
 
-        OrderResponse response = orderService.createOrder(request);
+        OrderResponse response = orderService.createOrder(request, idempotencyKey);
 
         return Response.status(Response.Status.CREATED).entity(response).build();
     }
