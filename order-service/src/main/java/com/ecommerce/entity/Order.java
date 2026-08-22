@@ -122,6 +122,13 @@ public class Order extends PanacheEntity {
         this.totalAmount = subtotal.add(this.shippingCost);
     }
 
+    public void transitionTo(OrderStatus newStatus) {
+        if (!status.canTransitionTo(newStatus)) {
+            throw new IllegalStateException("Cannot transition order from " + status + " to " + newStatus);
+        }
+        this.status = newStatus;
+    }
+
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
