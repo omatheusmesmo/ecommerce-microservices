@@ -11,6 +11,7 @@ import jakarta.ws.rs.ext.Provider;
 import java.util.NoSuchElementException;
 import org.eclipse.microprofile.faulttolerance.exceptions.TimeoutException;
 import org.hibernate.StaleStateException;
+import org.hibernate.exception.ConstraintViolationException;
 
 @Provider
 public class GlobalExceptionMapper extends ExceptionMapperBase<RuntimeException>
@@ -31,6 +32,10 @@ public class GlobalExceptionMapper extends ExceptionMapperBase<RuntimeException>
                     Response.Status.CONFLICT,
                     "Conflict",
                     "The resource was modified concurrently. Please reload it and retry.");
+        }
+
+        if (isConstraintViolation(exception)) {
+            return problem(Response.Status.CONFLICT, "Conflict", "The request conflicts with existing data.");
         }
 
         if (exception instanceof NoSuchElementException) {
@@ -70,6 +75,15 @@ public class GlobalExceptionMapper extends ExceptionMapperBase<RuntimeException>
     private boolean isOptimisticLock(Throwable throwable) {
         for (Throwable cause = throwable; cause != null; cause = cause.getCause()) {
             if (cause instanceof OptimisticLockException || cause instanceof StaleStateException) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isConstraintViolation(Throwable throwable) {
+        for (Throwable cause = throwable; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ConstraintViolationException) {
                 return true;
             }
         }

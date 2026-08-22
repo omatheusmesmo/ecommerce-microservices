@@ -81,6 +81,10 @@
       <artifactId>quarkus-http-problem</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.quarkiverse.idempotency</groupId>
+      <artifactId>quarkus-http-idempotency</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
     </dependency>

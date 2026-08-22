@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 class CartServiceTest {
 
+    private static final String CUSTOMER_EMAIL = "cart-service-test@example.com";
+
     @Inject
     CartService cartService;
 
@@ -30,14 +32,14 @@ class CartServiceTest {
     CartRepository cartRepository;
 
     private Long persistCart(CartStatus status) {
-        Cart cart = new Cart("jane@example.com");
+        Cart cart = new Cart(CUSTOMER_EMAIL);
         cart.status = status;
         cartRepository.persist(cart);
         return cart.id;
     }
 
     private Long persistCartWithItem(String productId, int quantity, BigDecimal unitPrice) {
-        Cart cart = new Cart("jane@example.com");
+        Cart cart = new Cart(CUSTOMER_EMAIL);
         cart.addItem(new CartItem(productId, "Gaming Chair", quantity, new Money(unitPrice, "BRL")));
         cart.calculateTotal();
         cartRepository.persist(cart);
@@ -47,7 +49,7 @@ class CartServiceTest {
     @Test
     @TestTransaction
     void createCart_persistsActiveEmptyCart() {
-        CartResponse response = cartService.createCart(new CreateCartRequest("jane@example.com"));
+        CartResponse response = cartService.createCart(new CreateCartRequest(CUSTOMER_EMAIL));
 
         assertNotNull(response.id());
         assertEquals(CartStatus.ACTIVE, response.status());
@@ -186,7 +188,7 @@ class CartServiceTest {
     void findActiveByCustomerEmail_noActiveCart_throwsNoSuchElementException() {
         persistCart(CartStatus.ABANDONED);
 
-        assertThrows(NoSuchElementException.class, () -> cartService.findActiveByCustomerEmail("jane@example.com"));
+        assertThrows(NoSuchElementException.class, () -> cartService.findActiveByCustomerEmail(CUSTOMER_EMAIL));
     }
 
     @Test
@@ -194,7 +196,7 @@ class CartServiceTest {
     void findActiveByCustomerEmail_activeCartExists_returnsIt() {
         Long cartId = persistCart(CartStatus.ACTIVE);
 
-        CartResponse response = cartService.findActiveByCustomerEmail("jane@example.com");
+        CartResponse response = cartService.findActiveByCustomerEmail(CUSTOMER_EMAIL);
 
         assertEquals(cartId, response.id());
     }
