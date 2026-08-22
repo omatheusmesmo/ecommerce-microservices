@@ -5,16 +5,12 @@ import com.ecommerce.dto.OrderResponse;
 import com.ecommerce.entity.Order;
 import com.ecommerce.entity.OrderItem;
 import com.ecommerce.entity.OrderStatus;
-import com.ecommerce.entity.OutboxEvent;
-import com.ecommerce.event.OrderCreatedEvent;
-import com.ecommerce.event.OrderStatusChangedEvent;
+import com.ecommerce.outbox.OrderEventPublisher;
 import com.ecommerce.repository.OrderRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ecommerce.saga.OrderSagaOrchestrator;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -31,7 +27,10 @@ public class OrderService {
     OrderRepository orderRepository;
 
     @Inject
-    ObjectMapper objectMapper;
+    OrderEventPublisher eventPublisher;
+
+    @Inject
+    OrderSagaOrchestrator sagaOrchestrator;
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request, String idempotencyKey) {
@@ -68,22 +67,8 @@ public class OrderService {
 
         OrderResponse response = OrderResponse.from(order);
 
-        OrderCreatedEvent event = OrderCreatedEvent.from(response);
-
-        OutboxEvent outboxEvent = null;
-        try {
-            String eventJson = objectMapper.writeValueAsString(event);
-            LOG.debugf("Serialized OrderCreatedEvent: %s", eventJson);
-
-            outboxEvent = new OutboxEvent("Order", order.id.toString(), "OrderCreated", eventJson);
-            outboxEvent.persist();
-
-            LOG.infof(
-                    "Event persisted to outbox: aggregate_type=%s, event_type=%s, aggregate_id=%s",
-                    "Order", "OrderCreated", order.id);
-        } catch (JsonProcessingException e) {
-            LOG.errorf(e, "Failed to serialize OrderCreatedEvent to JSON for order: %d", order.id);
-        }
+        eventPublisher.publishOrderCreated(response);
+        sagaOrchestrator.start(order.id);
 
         return response;
     }
@@ -150,26 +135,12 @@ public class OrderService {
     private OrderResponse applyTransition(Order order, OrderStatus newStatus) {
         OrderStatus oldStatus = order.status;
 
-        if (!oldStatus.canTransitionTo(newStatus)) {
-            throw new IllegalStateException("Cannot transition order from " + oldStatus + " to " + newStatus);
-        }
-
-        order.status = newStatus;
+        order.transitionTo(newStatus);
         orderRepository.persist(order);
 
+        eventPublisher.publishStatusChanged(order, oldStatus);
+
         LOG.infof("Order %d status updated from %s to %s", order.id, oldStatus, newStatus);
-
-        OrderStatusChangedEvent event =
-                new OrderStatusChangedEvent(order.id, oldStatus, newStatus, order.customerEmail, LocalDateTime.now());
-
-        OutboxEvent outboxEvent = null;
-        try {
-            outboxEvent = new OutboxEvent(
-                    "Order", order.id.toString(), "OrderStatusChanged", objectMapper.writeValueAsString(event));
-            outboxEvent.persist();
-        } catch (JsonProcessingException e) {
-            LOG.errorf(e, "Cannot serialize event to JSON");
-        }
 
         return OrderResponse.fromWithoutItems(order);
     }
