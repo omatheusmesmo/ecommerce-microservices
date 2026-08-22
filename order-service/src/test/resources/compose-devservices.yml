@@ -1,0 +1,76 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+      - -c
+      - max_replication_slots=4
+      - -c
+      - max_wal_senders=4
+    environment:
+      POSTGRES_USER: quarkus
+      POSTGRES_PASSWORD: quarkus
+      POSTGRES_DB: quarkus
+    ports:
+      - '5432'
+    healthcheck:
+      test: pg_isready -U quarkus -d quarkus
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  kafka:
+    image: apache/kafka-native:4.2.0
+    ports:
+      - '9092'
+    labels:
+      io.quarkus.devservices.compose.exposed_ports: /etc/kafka/docker/ports
+    environment:
+      KAFKA_NODE_ID: '1'
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9094
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,BROKER://0.0.0.0:9093,CONTROLLER://0.0.0.0:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,BROKER:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: BROKER
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: '1'
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: '1'
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: '0'
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        while [ ! -f /etc/kafka/docker/ports ]; do sleep 0.1; done
+        . /etc/kafka/docker/ports
+        export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:$$PORT_9092,BROKER://kafka:9093
+        /etc/kafka/docker/run
+
+  kafka-connect:
+    image: debezium/connect:2.5
+    ports:
+      - '8083'
+    labels:
+      io.quarkus.devservices.compose.config_map.port.8083: outbox.test.connect-port
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9093
+      GROUP_ID: kafka-connect-cluster
+      CONFIG_STORAGE_TOPIC: connect-configs
+      OFFSET_STORAGE_TOPIC: connect-offsets
+      STATUS_STORAGE_TOPIC: connect-status
+      CONFIG_STORAGE_REPLICATION_FACTOR: '1'
+      OFFSET_STORAGE_REPLICATION_FACTOR: '1'
+      STATUS_STORAGE_REPLICATION_FACTOR: '1'
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: 'false'
+    depends_on:
+      - kafka
+      - postgres
+    healthcheck:
+      test: curl -f http://localhost:8083/connectors
+      interval: 5s
+      timeout: 3s
+      retries: 30

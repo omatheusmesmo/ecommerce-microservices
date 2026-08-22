@@ -7,11 +7,16 @@ import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "outbox")
 @SequenceGenerator(name = "outbox_seq_gen", sequenceName = "outbox_seq", allocationSize = 50)
 public class OutboxEvent extends PanacheEntity {
+
+    @NotNull
+    @Column(unique = true, columnDefinition = "uuid")
+    public UUID eventId;
 
     @NotNull
     public String aggregateType;
@@ -29,6 +34,7 @@ public class OutboxEvent extends PanacheEntity {
     public LocalDateTime createdAt;
 
     public OutboxEvent() {
+        this.eventId = UUID.randomUUID();
         this.createdAt = LocalDateTime.now();
     }
 
