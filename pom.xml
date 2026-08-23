@@ -28,6 +28,7 @@
     <quarkus-http-idempotency.version>0.2.1</quarkus-http-idempotency.version>
     <spotless-plugin.version>3.10.0</spotless-plugin.version>
     <palantir-java-format.version>2.96.0</palantir-java-format.version>
+    <lz4.version>1.11.2</lz4.version>
   </properties>
 
   <dependencyManagement>
@@ -57,6 +58,13 @@
         <groupId>io.quarkiverse.idempotency</groupId>
         <artifactId>quarkus-http-idempotency</artifactId>
         <version>${quarkus-http-idempotency.version}</version>
+      </dependency>
+      <!-- TEMPORARY: CVE-2026-59949, reached through quarkus-messaging-kafka.
+           Drop this override once the Quarkus BOM pins lz4-java >= 1.11.1 -->
+      <dependency>
+        <groupId>at.yawk.lz4</groupId>
+        <artifactId>lz4-java</artifactId>
+        <version>${lz4.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
