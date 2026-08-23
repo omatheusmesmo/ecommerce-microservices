@@ -67,22 +67,20 @@ class OrderServiceTest {
     @Test
     @TestTransaction
     void createOrder_persistsOrderAndWritesMatchingOutboxEventAtomically() {
-        long outboxCountBefore = OutboxEvent.count();
-
         OrderResponse response = orderService.createOrder(createOrderRequest(), null);
 
         assertNotNull(response.id());
         assertEquals(new Money(new BigDecimal("215.00"), "BRL"), response.totalAmount());
         assertTrue(orderRepository.findByIdOptional(response.id()).isPresent());
 
-        assertEquals(outboxCountBefore + 1, OutboxEvent.count());
-        OutboxEvent event = OutboxEvent.find(
+        List<OutboxEvent> events = OutboxEvent.find(
                         "aggregateType = ?1 and aggregateId = ?2",
                         "Order",
                         response.id().toString())
-                .firstResult();
-        assertNotNull(event);
-        assertEquals("OrderCreated", event.eventType);
+                .list();
+
+        assertEquals(1, events.size());
+        assertEquals("OrderCreated", events.get(0).eventType);
     }
 
     @Test
