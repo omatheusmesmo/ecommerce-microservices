@@ -1,41 +1,17 @@
 version: 2
 updates:
-  # Maven dependencies — one entry per service, each has its own pom.xml
+  # Maven dependencies: a single entry for the root aggregator, which Dependabot
+  # traverses into every pom listed in <modules>. The shared version properties
+  # (quarkus.platform.version, jackson.version, ...) live in the root pom, so a
+  # per-service entry made Dependabot open one duplicate PR per module for the
+  # very same one-line change.
   - package-ecosystem: "maven"
-    directory: "/authentication-service"
+    directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "authentication-service"
-
-  - package-ecosystem: "maven"
-    directory: "/product-service"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "product-service"
-
-  - package-ecosystem: "maven"
-    directory: "/order-service"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "order-service"
-
-  - package-ecosystem: "maven"
-    directory: "/notification-service"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "notification-service"
 
   # Docker base images — one entry per service's Dockerfile set
   - package-ecosystem: "docker"
