@@ -46,8 +46,11 @@ updates:
       - "dependencies"
       - "notification-service"
 
-  # docker-compose.yml image pins at the repo root
-  - package-ecosystem: "docker"
+  # docker-compose.yml image pins at the repo root. The "docker" ecosystem only
+  # parses Dockerfiles and Kubernetes manifests, so it aborted every run with
+  # "No Dockerfiles nor Kubernetes YAML found in /" and never tracked a single
+  # compose image. Compose files need their own ecosystem.
+  - package-ecosystem: "docker-compose"
     directory: "/"
     schedule:
       interval: "weekly"
