@@ -304,7 +304,7 @@ services:
   # MONGODB (Product Service)
   # ========================================
   mongodb:
-    image: mongo:7.0
+    image: mongo:8.2
     container_name: ecommerce-mongodb
     ports:
       - "27017:27017"
