@@ -37,8 +37,10 @@ public class OutboxDevPublisher {
             emitter.send(Message.of(event.payload)
                     .addMetadata(OutgoingKafkaRecordMetadata.<String>builder()
                             .withKey(event.aggregateId)
-                            .addHeaders(new RecordHeader(
-                                    "eventId", event.eventId.toString().getBytes(StandardCharsets.UTF_8)))
+                            .addHeaders(
+                                    new RecordHeader(
+                                            "eventId", event.eventId.toString().getBytes(StandardCharsets.UTF_8)),
+                                    new RecordHeader("eventType", event.eventType.getBytes(StandardCharsets.UTF_8)))
                             .build()));
             event.delete();
         }

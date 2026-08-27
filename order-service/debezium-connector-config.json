@@ -22,7 +22,7 @@
     "transforms.outbox.table.field.event.id": "id",
     "transforms.outbox.table.field.event.key": "aggregate_id",
     "transforms.outbox.table.field.event.payload": "payload",
-    "transforms.outbox.table.fields.additional.placement": "event_id:header:eventId",
+    "transforms.outbox.table.fields.additional.placement": "event_id:header:eventId,event_type:header:eventType",
     "transforms.outbox.route.by.field": "aggregate_type",
     "transforms.outbox.route.topic.replacement": "outbox.event.${routedByValue}",
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",

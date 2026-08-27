@@ -54,7 +54,7 @@ class DebeziumOutboxRoutingTest {
     String bootstrapServers;
 
     @Test
-    void routedEventCarriesTheEventIdHeaderTheConsumerRequires() throws Exception {
+    void routedEventCarriesTheHeadersConsumersRouteOn() throws Exception {
         registerConnector();
 
         String aggregateId = UUID.randomUUID().toString();
@@ -62,11 +62,22 @@ class DebeziumOutboxRoutingTest {
 
         ConsumerRecord<String, String> record = consumeOne();
 
-        Header header = record.headers().lastHeader("eventId");
-        assertNotNull(header, "EventRouter must place outbox.event_id on the eventId header");
-        assertEquals(eventId.toString(), new String(header.value(), StandardCharsets.UTF_8));
+        assertEquals(
+                eventId.toString(),
+                headerValue(record, "eventId"),
+                "EventRouter must place outbox.event_id on the eventId header");
+        assertEquals(
+                "OrderCreated",
+                headerValue(record, "eventType"),
+                "EventRouter must place outbox.event_type on the eventType header");
         assertEquals(aggregateId, record.key());
         assertTrue(record.value().contains(aggregateId));
+    }
+
+    private String headerValue(ConsumerRecord<String, String> record, String name) {
+        Header header = record.headers().lastHeader(name);
+        assertNotNull(header, "missing " + name + " header");
+        return new String(header.value(), StandardCharsets.UTF_8);
     }
 
     private UUID persistOutboxEvent(String aggregateId) {
