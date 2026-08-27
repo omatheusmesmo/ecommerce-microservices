@@ -154,7 +154,7 @@ services:
   # KAFKA CONNECT INIT (Register Debezium Connector)
   # ========================================
   kafka-connect-init:
-    image: alpine:3.19
+    image: alpine:3.24
     container_name: ecommerce-kafka-connect-init
     restart: "no"  # Run once only
     depends_on:
