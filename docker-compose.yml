@@ -110,7 +110,7 @@ services:
   # KAFKA CONNECT (Debezium for CDC)
   # ========================================
   kafka-connect:
-    image: debezium/connect:2.5
+    image: debezium/connect:2.6
     container_name: ecommerce-kafka-connect
     ports:
       - "8084:8083"
