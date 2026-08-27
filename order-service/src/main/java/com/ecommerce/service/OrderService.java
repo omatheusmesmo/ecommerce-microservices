@@ -68,7 +68,7 @@ public class OrderService {
         OrderResponse response = OrderResponse.from(order);
 
         eventPublisher.publishOrderCreated(response);
-        sagaOrchestrator.start(order.id);
+        sagaOrchestrator.start(order);
 
         return response;
     }
@@ -128,6 +128,12 @@ public class OrderService {
         Order order = orderRepository
                 .findByIdOptional(id)
                 .orElseThrow(() -> new NoSuchElementException("Order not found with id: " + id));
+
+        if (sagaOrchestrator.holdsStock(id)) {
+            sagaOrchestrator.compensate(id, "Cancelled by the customer");
+            LOG.infof("Order %d cancellation is compensating; status follows the stock release", id);
+            return;
+        }
 
         applyTransition(order, OrderStatus.CANCELLED);
     }

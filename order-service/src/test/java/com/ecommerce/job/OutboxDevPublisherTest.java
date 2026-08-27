@@ -33,9 +33,25 @@ class OutboxDevPublisherTest {
         awaitRowDeleted(id, 10);
     }
 
+    @Test
+    void commandRowsAreRoutedByAggregateTypeLikeTheDebeziumRouterDoes() {
+        String marker = UUID.randomUUID().toString();
+        Long id = persistEvent("OrderCommand", "ReserveStock", marker);
+
+        Optional<String> onCommandTopic = waitForMessage("outbox.event.OrderCommand", s -> s.contains(marker), 10);
+        assertTrue(onCommandTopic.isPresent(), "a command must land on the command topic, not on outbox.event.Order");
+
+        awaitRowDeleted(id, 10);
+    }
+
     @Transactional
     Long persistEvent(String marker) {
-        OutboxEvent event = new OutboxEvent("Order", "42", "OrderCreated", "{\"marker\":\"" + marker + "\"}");
+        return persistEvent("Order", "OrderCreated", marker);
+    }
+
+    @Transactional
+    Long persistEvent(String aggregateType, String eventType, String marker) {
+        OutboxEvent event = new OutboxEvent(aggregateType, "42", eventType, "{\"marker\":\"" + marker + "\"}");
         event.persist();
         return event.id;
     }

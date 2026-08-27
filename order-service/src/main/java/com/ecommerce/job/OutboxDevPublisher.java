@@ -18,7 +18,9 @@ import org.jboss.logging.Logger;
 /**
  * Stand-in for the Debezium connector outside %prod, where nothing captures the
  * outbox table via CDC: polls unpublished rows and emits them to the same topic
- * Debezium's Outbox Event Router would use, then deletes them.
+ * Debezium's Outbox Event Router would use, then deletes them. Like the router, it
+ * derives the topic from the aggregate type, so order events and the SAGA's commands
+ * land apart here exactly as they do in production.
  */
 @ApplicationScoped
 @UnlessBuildProfile("prod")
@@ -36,6 +38,7 @@ public class OutboxDevPublisher {
         for (OutboxEvent event : events) {
             emitter.send(Message.of(event.payload)
                     .addMetadata(OutgoingKafkaRecordMetadata.<String>builder()
+                            .withTopic("outbox.event." + event.aggregateType)
                             .withKey(event.aggregateId)
                             .addHeaders(
                                     new RecordHeader(

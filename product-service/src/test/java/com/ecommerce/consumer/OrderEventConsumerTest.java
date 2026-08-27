@@ -1,11 +1,10 @@
 package com.ecommerce.consumer;
 
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.ecommerce.entity.Category;
+import com.ecommerce.entity.ProcessedOrderEvent;
 import com.ecommerce.entity.Product;
-import com.ecommerce.event.OrderCancelledEvent;
 import com.ecommerce.event.OrderCreatedEvent;
 import com.ecommerce.repository.CategoryRepository;
 import com.ecommerce.service.ProductService;
@@ -20,11 +19,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -64,69 +61,6 @@ public class OrderEventConsumerTest {
     }
 
     @Test
-    public void consumeOrderCreated_decreasesStock() throws Exception {
-        Product product = new Product(
-                "Test Product", "Description", new Money(new BigDecimal("100.00"), "BRL"), 10, newCategoryId());
-        Product created = productService.create(product);
-        String productId = created.id.toString();
-
-        OrderCreatedEvent.OrderItemEvent item = new OrderCreatedEvent.OrderItemEvent(
-                productId,
-                "Test Product",
-                2,
-                new Money(new BigDecimal("100.00"), "BRL"),
-                new Money(new BigDecimal("200.00"), "BRL"));
-        OrderCreatedEvent event = new OrderCreatedEvent(
-                1L,
-                "Customer",
-                "customer@example.com",
-                "CONFIRMED",
-                new Money(new BigDecimal("200.00"), "BRL"),
-                List.of(item),
-                LocalDateTime.now());
-        String eventJson = objectMapper.writeValueAsString(event);
-
-        try (KafkaProducer<String, String> producer = createProducer()) {
-            ProducerRecord<String, String> record = new ProducerRecord<>("outbox.event.Order", productId, eventJson);
-            record.headers()
-                    .add(new RecordHeader(
-                            "eventId", UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8)));
-            producer.send(record);
-        }
-
-        await().atMost(30, TimeUnit.SECONDS)
-                .until(() -> productService.findById(productId).totalOnHand() == 8);
-        Product updated = productService.findById(productId);
-        assertEquals(8, updated.totalOnHand());
-    }
-
-    @Test
-    public void consumeOrderCancelled_increasesStock() throws Exception {
-        Product product = new Product(
-                "Test Product Cancel", "Description", new Money(new BigDecimal("100.00"), "BRL"), 10, newCategoryId());
-        Product created = productService.create(product);
-        String productId = created.id.toString();
-
-        OrderCancelledEvent.OrderItem item = new OrderCancelledEvent.OrderItem(productId, 3);
-        OrderCancelledEvent event = new OrderCancelledEvent(
-                1L, "Customer", new Money(new BigDecimal("300.00"), "BRL"), List.of(item), LocalDateTime.now());
-        String eventJson = objectMapper.writeValueAsString(event);
-
-        try (KafkaProducer<String, String> producer = createProducer()) {
-            ProducerRecord<String, String> record = new ProducerRecord<>("outbox.event.Order", productId, eventJson);
-            record.headers()
-                    .add(new RecordHeader(
-                            "eventId", UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8)));
-            producer.send(record);
-        }
-
-        await().atMost(30, TimeUnit.SECONDS)
-                .until(() -> productService.findById(productId).totalOnHand() == 13);
-        Product updated = productService.findById(productId);
-        assertEquals(13, updated.totalOnHand());
-    }
-
-    @Test
     public void onOrderEvent_isIdempotent_whenSameKafkaRecordRedelivered() throws Exception {
         Product product = new Product(
                 "Test Product Idempotent",
@@ -158,8 +92,7 @@ public class OrderEventConsumerTest {
         orderEventConsumer.onOrderEvent(kafkaMessage);
         orderEventConsumer.onOrderEvent(kafkaMessage);
 
-        Product updated = productService.findById(productId);
-        assertEquals(8, updated.totalOnHand());
+        assertEquals(1, ProcessedOrderEvent.count("_id", eventIdOf(kafkaMessage)));
     }
 
     @Test
@@ -193,8 +126,13 @@ public class OrderEventConsumerTest {
         orderEventConsumer.onOrderEvent(toKafkaMessage(eventJson, 1L, eventId));
         orderEventConsumer.onOrderEvent(toKafkaMessage(eventJson, 2L, eventId));
 
-        Product updated = productService.findById(productId);
-        assertEquals(8, updated.totalOnHand());
+        assertEquals(1, ProcessedOrderEvent.count("_id", eventId));
+    }
+
+    private String eventIdOf(Message<String> kafkaMessage) {
+        IncomingKafkaRecordMetadata<?, ?> metadata =
+                kafkaMessage.getMetadata(IncomingKafkaRecordMetadata.class).orElseThrow();
+        return new String(metadata.getHeaders().lastHeader("eventId").value(), java.nio.charset.StandardCharsets.UTF_8);
     }
 
     private Message<String> toRedeliveredKafkaMessage(String payload, long offset) {
