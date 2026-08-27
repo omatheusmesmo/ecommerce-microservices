@@ -1,11 +1,10 @@
 package com.ecommerce.consumer;
 
-import com.ecommerce.entity.ReservationStatus;
-import com.ecommerce.entity.StockReservation;
 import com.ecommerce.event.ConfirmStockReservationCommand;
 import com.ecommerce.event.ReleaseStockCommand;
 import com.ecommerce.event.ReserveStockCommand;
 import com.ecommerce.messaging.StockReplyProducer;
+import com.ecommerce.service.ReservationOutcome;
 import com.ecommerce.service.StockReservationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
@@ -77,12 +76,10 @@ public class StockCommandConsumer {
     }
 
     private void handleReserve(ReserveStockCommand command) {
-        StockReservation reservation = reservationService.reserve(command);
-
-        if (reservation.status == ReservationStatus.REJECTED) {
-            replyProducer.publishStockRejected(command.orderId(), reservation.rejectionReason);
-        } else {
-            replyProducer.publishStockReserved(command.orderId());
+        switch (reservationService.reserve(command)) {
+            case ReservationOutcome.Reserved(long orderId) -> replyProducer.publishStockReserved(orderId);
+            case ReservationOutcome.Rejected(long orderId, String reason) ->
+                replyProducer.publishStockRejected(orderId, reason);
         }
     }
 

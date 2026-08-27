@@ -1,6 +1,7 @@
 package com.ecommerce.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -68,9 +69,9 @@ public class StockReservationServiceTest {
         String productId = newProduct(10);
         long orderId = nextOrderId();
 
-        StockReservation reservation = reservationService.reserve(reserveOf(orderId, productId, 4));
+        ReservationOutcome outcome = reservationService.reserve(reserveOf(orderId, productId, 4));
 
-        assertEquals(ReservationStatus.RESERVED, reservation.status);
+        assertInstanceOf(ReservationOutcome.Reserved.class, outcome);
 
         Product product = reload(productId);
         assertEquals(10, product.totalOnHand());
@@ -83,10 +84,10 @@ public class StockReservationServiceTest {
         String productId = newProduct(10);
 
         reservationService.reserve(reserveOf(nextOrderId(), productId, 8));
-        StockReservation second = reservationService.reserve(reserveOf(nextOrderId(), productId, 3));
+        ReservationOutcome second = reservationService.reserve(reserveOf(nextOrderId(), productId, 3));
 
-        assertEquals(ReservationStatus.REJECTED, second.status);
-        assertTrue(second.rejectionReason.contains(productId));
+        ReservationOutcome.Rejected rejected = assertInstanceOf(ReservationOutcome.Rejected.class, second);
+        assertTrue(rejected.reason().contains(productId));
 
         Product product = reload(productId);
         assertEquals(8, product.totalReserved());
@@ -99,10 +100,10 @@ public class StockReservationServiceTest {
         String scarce = newProduct(1);
         long orderId = nextOrderId();
 
-        StockReservation reservation = reservationService.reserve(new ReserveStockCommand(
+        ReservationOutcome outcome = reservationService.reserve(new ReserveStockCommand(
                 orderId, List.of(new ReserveStockCommand.Item(plentiful, 5), new ReserveStockCommand.Item(scarce, 3))));
 
-        assertEquals(ReservationStatus.REJECTED, reservation.status);
+        assertInstanceOf(ReservationOutcome.Rejected.class, outcome);
 
         assertEquals(0, reload(plentiful).totalReserved());
         assertEquals(0, reload(scarce).totalReserved());
@@ -114,9 +115,9 @@ public class StockReservationServiceTest {
         long orderId = nextOrderId();
 
         reservationService.reserve(reserveOf(orderId, productId, 4));
-        StockReservation replay = reservationService.reserve(reserveOf(orderId, productId, 4));
+        ReservationOutcome replay = reservationService.reserve(reserveOf(orderId, productId, 4));
 
-        assertEquals(ReservationStatus.RESERVED, replay.status);
+        assertInstanceOf(ReservationOutcome.Reserved.class, replay);
         assertEquals(4, reload(productId).totalReserved());
     }
 
