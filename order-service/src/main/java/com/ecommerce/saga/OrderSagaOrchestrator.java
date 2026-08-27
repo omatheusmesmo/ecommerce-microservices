@@ -4,6 +4,7 @@ import com.ecommerce.entity.Order;
 import com.ecommerce.entity.OrderSaga;
 import com.ecommerce.entity.OrderSagaStep;
 import com.ecommerce.entity.OrderStatus;
+import com.ecommerce.outbox.OrderCommandPublisher;
 import com.ecommerce.outbox.OrderEventPublisher;
 import com.ecommerce.repository.OrderRepository;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -14,8 +15,11 @@ import org.jboss.logging.Logger;
 
 /**
  * Drives the order lifecycle across services. It is the only component that knows the whole
- * flow: each callback records the outcome of a step, advances the SAGA, and translates a
- * terminal step into the order's business status.
+ * flow: it issues the command for each step, and each callback records the reply, advances the
+ * SAGA, and translates a terminal step into the order's business status.
+ *
+ * <p>Commands are written to the outbox inside the same transaction that advances the SAGA, so
+ * the step and the command that carries it out can never disagree.
  */
 @ApplicationScoped
 public class OrderSagaOrchestrator {
@@ -26,28 +30,38 @@ public class OrderSagaOrchestrator {
 
     private final OrderEventPublisher eventPublisher;
 
+    private final OrderCommandPublisher commandPublisher;
+
     @Inject
-    public OrderSagaOrchestrator(OrderRepository orderRepository, OrderEventPublisher eventPublisher) {
+    public OrderSagaOrchestrator(
+            OrderRepository orderRepository,
+            OrderEventPublisher eventPublisher,
+            OrderCommandPublisher commandPublisher) {
         this.orderRepository = orderRepository;
         this.eventPublisher = eventPublisher;
+        this.commandPublisher = commandPublisher;
     }
 
     /**
-     * Opens the SAGA for a freshly created order. Requires the caller's transaction so the order
-     * and its SAGA are never persisted apart.
+     * Opens the SAGA for a freshly created order and asks for its stock. Requires the caller's
+     * transaction so the order, its SAGA and the first command are never persisted apart.
      */
     @Transactional(Transactional.TxType.MANDATORY)
-    public OrderSaga start(Long orderId) {
-        OrderSaga saga = new OrderSaga(orderId);
+    public OrderSaga start(Order order) {
+        OrderSaga saga = new OrderSaga(order.id);
         saga.persist();
 
-        LOG.infof("Order SAGA started for order %d at step %s", orderId, saga.currentStep);
+        commandPublisher.reserveStock(order);
+
+        LOG.infof("Order SAGA started for order %d at step %s", order.id, saga.currentStep);
         return saga;
     }
 
     @Transactional
     public void onStockReserved(Long orderId) {
         advance(orderId, OrderSagaStep.CONFIRM_STOCK);
+
+        commandPublisher.confirmStockReservation(orderId);
     }
 
     @Transactional
@@ -65,10 +79,16 @@ public class OrderSagaOrchestrator {
         transitionOrder(orderId, OrderStatus.CONFIRMED);
     }
 
+    /**
+     * Starts undoing a SAGA that already holds stock. The order stays where it is until the
+     * release is acknowledged, because until then the reservation is still out there.
+     */
     @Transactional
-    public void onCompensationStarted(Long orderId, String reason) {
+    public void compensate(Long orderId, String reason) {
         OrderSaga saga = advance(orderId, OrderSagaStep.COMPENSATING);
         saga.failureReason = reason;
+
+        commandPublisher.releaseStock(orderId);
     }
 
     @Transactional
@@ -76,6 +96,13 @@ public class OrderSagaOrchestrator {
         advance(orderId, OrderSagaStep.COMPENSATED);
 
         transitionOrder(orderId, OrderStatus.CANCELLED);
+    }
+
+    public boolean holdsStock(Long orderId) {
+        return OrderSaga.findByOrderId(orderId)
+                .map(saga -> saga.currentStep == OrderSagaStep.RESERVE_STOCK
+                        || saga.currentStep == OrderSagaStep.CONFIRM_STOCK)
+                .orElse(false);
     }
 
     private OrderSaga advance(Long orderId, OrderSagaStep target) {

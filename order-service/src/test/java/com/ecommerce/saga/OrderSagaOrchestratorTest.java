@@ -8,6 +8,7 @@ import com.ecommerce.dto.CreateOrderRequest;
 import com.ecommerce.dto.OrderItemRequest;
 import com.ecommerce.dto.OrderResponse;
 import com.ecommerce.entity.Order;
+import com.ecommerce.entity.OrderItem;
 import com.ecommerce.entity.OrderSaga;
 import com.ecommerce.entity.OrderSagaStep;
 import com.ecommerce.entity.OrderStatus;
@@ -41,8 +42,10 @@ class OrderSagaOrchestratorTest {
 
     private Long persistOrderWithSaga() {
         Order order = new Order("Jane Doe", "jane@example.com");
+        order.addItem(new OrderItem("product-1", "Product One", 2, new Money(new BigDecimal("50.00"), "BRL")));
+        order.calculateTotal();
         orderRepository.persist(order);
-        orchestrator.start(order.id);
+        orchestrator.start(order);
         return order.id;
     }
 
@@ -105,7 +108,7 @@ class OrderSagaOrchestratorTest {
     void compensationReleasesStockAndCancelsTheOrder() {
         Long orderId = persistOrderWithSaga();
 
-        orchestrator.onCompensationStarted(orderId, "Cancelled by the customer");
+        orchestrator.compensate(orderId, "Cancelled by the customer");
         assertEquals(OrderSagaStep.COMPENSATING, sagaOf(orderId).currentStep);
         assertEquals(OrderStatus.PENDING, statusOf(orderId));
 
@@ -118,12 +121,17 @@ class OrderSagaOrchestratorTest {
     @TestTransaction
     void everyOrderStatusChangeDrivenByTheSagaIsAnnouncedThroughTheOutbox() {
         Long orderId = persistOrderWithSaga();
-        long outboxCountBefore = OutboxEvent.count();
+        long eventsBefore = OutboxEvent.count("aggregateType", "Order");
+        long commandsBefore = OutboxEvent.count("aggregateType", "OrderCommand");
 
         orchestrator.onStockReserved(orderId);
         orchestrator.onStockConfirmed(orderId);
 
-        assertEquals(outboxCountBefore + 1, OutboxEvent.count());
+        assertEquals(eventsBefore + 1, OutboxEvent.count("aggregateType", "Order"), "one status change announced");
+        assertEquals(
+                commandsBefore + 1,
+                OutboxEvent.count("aggregateType", "OrderCommand"),
+                "one ConfirmStockReservation command issued");
 
         OutboxEvent published = OutboxEvent.<OutboxEvent>find(
                         "aggregateId = ?1 and eventType = ?2", orderId.toString(), "OrderStatusChanged")
