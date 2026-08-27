@@ -36,25 +36,22 @@ public class StockReservationService {
         this.productRepository = productRepository;
     }
 
-    public StockReservation reserve(ReserveStockCommand command) {
+    public ReservationOutcome reserve(ReserveStockCommand command) {
+        long orderId = command.orderId();
         List<ReservedItem> requested = command.items().stream()
                 .map(item -> new ReservedItem(item.productId(), item.quantity()))
                 .toList();
 
-        StockReservation reservation = new StockReservation(command.orderId(), requested);
+        StockReservation reservation = new StockReservation(orderId, requested);
         try {
             reservation.persist();
         } catch (MongoWriteException e) {
             if (e.getError().getCategory() != ErrorCategory.DUPLICATE_KEY) {
                 throw e;
             }
-            StockReservation existing = StockReservation.findByOrderId(command.orderId())
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Reservation vanished after a duplicate key on order " + command.orderId()));
-            LOG.infof(
-                    "Stock reservation for order %d already decided as %s, replaying it",
-                    command.orderId(), existing.status);
-            return existing;
+            StockReservation decided = require(orderId);
+            LOG.infof("Stock reservation for order %d already decided as %s, replaying it", orderId, decided.status);
+            return outcomeOf(orderId, decided);
         }
 
         List<ReservedItem> taken = new ArrayList<>();
@@ -64,27 +61,36 @@ public class StockReservationService {
                 String reason = "Insufficient stock for product " + item.productId();
                 reservation.markRejected(reason);
                 reservation.update();
-                LOG.infof("Stock reservation rejected for order %d: %s", command.orderId(), reason);
-                return reservation;
+                LOG.infof("Stock reservation rejected for order %d: %s", orderId, reason);
+                return new ReservationOutcome.Rejected(orderId, reason);
             }
             taken.add(item);
         }
 
-        LOG.infof("Stock reserved for order %d across %d product(s)", command.orderId(), taken.size());
-        return reservation;
+        LOG.infof("Stock reserved for order %d across %d product(s)", orderId, taken.size());
+        return new ReservationOutcome.Reserved(orderId);
+    }
+
+    private ReservationOutcome outcomeOf(long orderId, StockReservation reservation) {
+        return switch (reservation.status) {
+            case REJECTED -> new ReservationOutcome.Rejected(orderId, reservation.rejectionReason);
+            case RESERVED, CONFIRMED, RELEASED -> new ReservationOutcome.Reserved(orderId);
+        };
     }
 
     public StockReservation confirm(long orderId) {
         StockReservation reservation = require(orderId);
 
-        if (reservation.status == ReservationStatus.CONFIRMED) {
-            return reservation;
-        }
-        if (reservation.status != ReservationStatus.RESERVED) {
-            throw new IllegalStateException(
-                    "Cannot confirm a " + reservation.status + " reservation for order " + orderId);
-        }
+        return switch (reservation.status) {
+            case CONFIRMED -> reservation;
+            case RESERVED -> applyConfirmation(orderId, reservation);
+            case REJECTED, RELEASED ->
+                throw new IllegalStateException(
+                        "Cannot confirm a " + reservation.status + " reservation for order " + orderId);
+        };
+    }
 
+    private StockReservation applyConfirmation(long orderId, StockReservation reservation) {
         for (ReservedItem item : reservation.items) {
             if (productRepository.confirmReservation(item.productId(), item.quantity()) == 0) {
                 throw new IllegalStateException(
@@ -101,14 +107,15 @@ public class StockReservationService {
     public StockReservation release(long orderId) {
         StockReservation reservation = require(orderId);
 
-        if (reservation.status == ReservationStatus.RELEASED || reservation.status == ReservationStatus.REJECTED) {
-            return reservation;
-        }
-        if (reservation.status != ReservationStatus.RESERVED) {
-            throw new IllegalStateException(
-                    "Cannot release a " + reservation.status + " reservation for order " + orderId);
-        }
+        return switch (reservation.status) {
+            case RELEASED, REJECTED -> reservation;
+            case RESERVED -> applyRelease(orderId, reservation);
+            case CONFIRMED ->
+                throw new IllegalStateException("Cannot release a CONFIRMED reservation for order " + orderId);
+        };
+    }
 
+    private StockReservation applyRelease(long orderId, StockReservation reservation) {
         giveBack(reservation.items);
 
         reservation.markStatus(ReservationStatus.RELEASED);
