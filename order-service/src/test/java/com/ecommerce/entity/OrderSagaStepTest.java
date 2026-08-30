@@ -2,10 +2,12 @@ package com.ecommerce.entity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.EnumSet;
 import java.util.Set;
@@ -15,8 +17,10 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 class OrderSagaStepTest {
 
-    private static final Set<OrderSagaStep> TERMINAL_STEPS =
-            EnumSet.of(OrderSagaStep.COMPLETED, OrderSagaStep.COMPENSATED, OrderSagaStep.FAILED);
+    private static final Duration TIMEOUT = Duration.ofSeconds(30);
+
+    private static final Set<OrderSagaStep> TERMINAL_STEPS = EnumSet.of(
+            OrderSagaStep.COMPLETED, OrderSagaStep.COMPENSATED, OrderSagaStep.FAILED, OrderSagaStep.ABANDONED);
 
     @Test
     void happyPathWithoutPaymentGoesStraightFromReservationToConfirmation() {
@@ -40,6 +44,9 @@ class OrderSagaStepTest {
     @Test
     void confirmedStockCannotBeCompensated() {
         assertFalse(OrderSagaStep.CONFIRM_STOCK.canTransitionTo(OrderSagaStep.COMPENSATING));
+        assertTrue(
+                OrderSagaStep.CONFIRM_STOCK.canTransitionTo(OrderSagaStep.ABANDONED),
+                "an unanswered confirmation must still be able to stop, just not by releasing stock");
     }
 
     @ParameterizedTest
@@ -59,22 +66,54 @@ class OrderSagaStepTest {
         OrderSaga saga = new OrderSaga(1L);
 
         IllegalStateException thrown =
-                assertThrows(IllegalStateException.class, () -> saga.advanceTo(OrderSagaStep.COMPLETED));
+                assertThrows(IllegalStateException.class, () -> saga.advanceTo(OrderSagaStep.COMPLETED, TIMEOUT));
 
         assertTrue(thrown.getMessage().contains("RESERVE_STOCK"));
         assertEquals(OrderSagaStep.RESERVE_STOCK, saga.currentStep);
     }
 
     @Test
-    void advanceToResetsPerStepBookkeeping() {
+    void advancingToAStepThatAwaitsAReplyResetsTheAttemptsAndArmsADeadline() {
         OrderSaga saga = new OrderSaga(1L);
         saga.attempts = 3;
-        saga.deadlineAt = LocalDateTime.now();
 
-        saga.advanceTo(OrderSagaStep.CONFIRM_STOCK);
+        saga.advanceTo(OrderSagaStep.CONFIRM_STOCK, TIMEOUT);
 
         assertEquals(OrderSagaStep.CONFIRM_STOCK, saga.currentStep);
         assertEquals(0, saga.attempts);
-        assertNull(saga.deadlineAt);
+        assertNotNull(saga.deadlineAt, "a step waiting for a reply must be recoverable on timeout");
+    }
+
+    @Test
+    void advancingToATerminalStepClearsTheDeadline() {
+        OrderSaga saga = new OrderSaga(1L);
+        saga.advanceTo(OrderSagaStep.COMPENSATING, TIMEOUT);
+
+        saga.advanceTo(OrderSagaStep.COMPENSATED, TIMEOUT);
+
+        assertNull(saga.deadlineAt, "a finished SAGA must never be picked up by the timeout sweep");
+    }
+
+    @Test
+    void everyStepThatIsNotTerminalCanLeaveTheFlowWhenItsReplyNeverArrives() {
+        for (OrderSagaStep step : OrderSagaStep.values()) {
+            if (step.isTerminal()) {
+                continue;
+            }
+            boolean canGiveUp =
+                    step.canTransitionTo(OrderSagaStep.COMPENSATING) || step.canTransitionTo(OrderSagaStep.ABANDONED);
+            assertTrue(canGiveUp, step + " would be stuck forever once its attempts run out");
+        }
+    }
+
+    @Test
+    void recordingAnAttemptCountsItAndPushesTheDeadlineForward() {
+        OrderSaga saga = new OrderSaga(1L);
+        saga.deadlineAt = LocalDateTime.now().minusMinutes(5);
+
+        saga.recordAttempt(TIMEOUT);
+
+        assertEquals(1, saga.attempts);
+        assertTrue(saga.deadlineAt.isAfter(LocalDateTime.now()));
     }
 }
