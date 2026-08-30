@@ -12,6 +12,7 @@ import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import org.jboss.logging.Logger;
 
 /**
@@ -104,15 +105,29 @@ public class StockReservationService {
         return reservation;
     }
 
-    public StockReservation release(long orderId) {
-        StockReservation reservation = require(orderId);
+    /**
+     * Gives back the stock held for an order, if any is held. A missing reservation is a
+     * successful no-op rather than an error: the orchestrator compensates steps it never got an
+     * answer for, so a command that never arrived here is exactly the case it is asking about.
+     * Failing instead would leave it waiting for a reply that could never come.
+     *
+     * @return the reservation that was released, or empty when the order never held stock
+     */
+    public Optional<StockReservation> release(long orderId) {
+        Optional<StockReservation> found = StockReservation.findByOrderId(orderId);
+        if (found.isEmpty()) {
+            LOG.infof("No stock reservation for order %d; nothing to release", orderId);
+            return Optional.empty();
+        }
 
-        return switch (reservation.status) {
-            case RELEASED, REJECTED -> reservation;
-            case RESERVED -> applyRelease(orderId, reservation);
-            case CONFIRMED ->
-                throw new IllegalStateException("Cannot release a CONFIRMED reservation for order " + orderId);
-        };
+        StockReservation reservation = found.get();
+        return Optional.of(
+                switch (reservation.status) {
+                    case RELEASED, REJECTED -> reservation;
+                    case RESERVED -> applyRelease(orderId, reservation);
+                    case CONFIRMED ->
+                        throw new IllegalStateException("Cannot release a CONFIRMED reservation for order " + orderId);
+                });
     }
 
     private StockReservation applyRelease(long orderId, StockReservation reservation) {

@@ -143,7 +143,7 @@ public class StockReservationServiceTest {
         long orderId = nextOrderId();
         reservationService.reserve(reserveOf(orderId, productId, 4));
 
-        StockReservation released = reservationService.release(orderId);
+        StockReservation released = reservationService.release(orderId).orElseThrow();
 
         assertEquals(ReservationStatus.RELEASED, released.status);
 
@@ -181,9 +181,13 @@ public class StockReservationServiceTest {
     }
 
     @Test
-    public void aCommandForAnUnknownOrderIsRejected() {
+    public void confirmingAnUnknownOrderIsRejected() {
         assertThrows(NoSuchElementException.class, () -> reservationService.confirm(nextOrderId()));
-        assertThrows(NoSuchElementException.class, () -> reservationService.release(nextOrderId()));
+    }
+
+    @Test
+    public void releasingAnUnknownOrderSucceedsWithNothingToGiveBack() {
+        assertTrue(reservationService.release(nextOrderId()).isEmpty());
     }
 
     @Test
