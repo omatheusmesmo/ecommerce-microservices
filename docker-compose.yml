@@ -35,7 +35,7 @@ services:
   # KAFKA
   # ========================================
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
+    image: confluentinc/cp-kafka:8.3.1
     container_name: ecommerce-kafka
     depends_on:
       zookeeper:
@@ -78,7 +78,7 @@ services:
   # KAFKA INIT (Creates topics automatically)
   # ========================================
   kafka-init:
-    image: confluentinc/cp-kafka:7.5.0
+    image: confluentinc/cp-kafka:8.3.1
     container_name: ecommerce-kafka-init
     restart: "no"  # Run once only
     depends_on:
