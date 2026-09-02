@@ -3,7 +3,7 @@ services:
   # ZOOKEEPER (required for Kafka)
   # ========================================
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
+    image: confluentinc/cp-zookeeper:7.9.1
     container_name: ecommerce-zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
